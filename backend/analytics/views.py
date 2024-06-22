@@ -158,21 +158,49 @@ def get_heart_data(start_date, end_date):
     return rows
 
 @api_view(['GET'])
-def oura_data(request):
+def oura_daily_sleep(request):
     start_date = '2022-01-01'
     end_date = '2024-12-01'
 
     sleep_data = get_sleep_data(start_date, end_date)
-    readiness_data = get_readiness_data(start_date, end_date)
-    stress_data = get_stress_data(start_date, end_date)
-    activity_data = get_activity_data(start_date, end_date)
-    heart_data = get_heart_data(start_date, end_date)
 
 
-    return Response({
-        'sleep_data': sleep_data,
-        'readiness_data': readiness_data,
-        'stress_data': stress_data,
-        'activity_data': activity_data,
-        'heart_data': heart_data
-    })
+    return Response(sleep_data)
+
+
+@api_view(['GET'])
+def oura_daily_readiness(request):
+    start_date = '2022-01-01'
+    end_date = '2024-12-01'
+
+    sleep_data = get_readiness_data(start_date, end_date)
+
+
+    return Response(sleep_data)
+
+@api_view(['GET'])
+def oura_daily_stress(request):
+    start_date = '2022-01-01'
+    end_date = '2024-12-01'
+
+    sleep_data = get_stress_data(start_date, end_date)
+
+    return Response(sleep_data)
+
+@api_view(['GET'])
+def oura_daily_activity(request):
+    start_date = '2022-01-01'
+    end_date = '2024-12-01'
+
+    sleep_data = get_activity_data(start_date, end_date)
+
+    return Response(sleep_data)
+
+@api_view(['GET'])
+def oura_heartrate(request):
+    start_date = '2022-01-01'
+    end_date = '2024-12-01'
+
+    sleep_data = get_heart_data(start_date, end_date)
+
+    return Response(sleep_data)
