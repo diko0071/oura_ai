@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
-
+from analytics.services import load_models, compute_feature_importances, aggregate_data, get_last_week_data
 
 load_dotenv()
 
@@ -204,3 +204,37 @@ def oura_heartrate(request):
     sleep_data = get_heart_data(start_date, end_date)
 
     return Response(sleep_data)
+
+
+api = [
+    'daily_sleep',
+    'daily_readiness',
+    'daily_stress',
+    'daily_activity',
+]
+
+directory = "ml_models"
+
+metrics = ['daily_activity_score', 'daily_readiness_score', 'daily_stress_day_summary', 'daily_sleep_score']
+
+loaded_models = load_models(metrics, directory)
+
+importance_dfs = {metric: compute_feature_importances(model) for metric, model in loaded_models.items()}
+
+
+@api_view(['GET'])
+def get_last_week_insights(request):
+    dataset = aggregate_data(api)
+
+    insights = {metric: get_last_week_data(importance_df, dataset, metric) for metric, importance_df in importance_dfs.items()}
+
+    response_data = {}
+    for metric, results in insights.items():
+        response_data[metric] = {
+            "metric_last_week_values": results['metric_last_week_values'],
+            "new_this_week": results['new_this_week'],
+            "last_week_values": results['last_week_values'],
+            "last_week_top_10": results['last_week_top_10']
+        }
+
+    return Response(response_data)

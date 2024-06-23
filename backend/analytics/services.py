@@ -2,9 +2,12 @@ import pandas as pd
 import os
 import pickle
 import requests
+import warnings
+from sklearn.exceptions import InconsistentVersionWarning
 
+warnings.filterwarnings("ignore", category=InconsistentVersionWarning)
 
-directory = "models"
+directory = "ml_models"
 
 metrics = ['daily_activity_score', 'daily_readiness_score', 'daily_stress_day_summary', 'daily_sleep_score']
 
@@ -41,7 +44,6 @@ def get_data(api):
     
     return rows
 
-
 def aggregate_data(apis):
     combined_df = pd.DataFrame()
 
@@ -59,8 +61,23 @@ def aggregate_data(apis):
     
     combined_df = combined_df.reset_index()
 
-    return combined_df
+    combined_df['week'] = pd.to_datetime(combined_df['day']).dt.isocalendar().week
 
+    columns_to_drop = ['daily_sleep_id', 'daily_sleep_timestamp', 'daily_readiness_id', 
+                   'daily_readiness_timestamp', 'daily_stress_id', 'daily_activity_id', 
+                   'daily_activity_timestamp', 'daily_activity_met', 'daily_activity_class_5_min']
+
+    resulted_df = combined_df.drop(columns=[col for col in columns_to_drop if col in combined_df.columns])
+
+    resulted_df = resulted_df.dropna(axis=1, how='all')
+
+    numeric_columns = resulted_df.select_dtypes(include=['float64', 'int64'])
+    
+    resulted_df[numeric_columns.columns] = numeric_columns.fillna(numeric_columns.mean())
+
+    resulted_df['day'] = pd.to_datetime(resulted_df['day'])
+
+    return resulted_df
 
 def load_model(metric, directory):
     with open(os.path.join(directory, f'{metric}_model.pkl'), 'rb') as f:
@@ -90,6 +107,28 @@ def compute_feature_importances(models):
         return pd.DataFrame(columns=['feature', 'importance', 'week'])
     
 
-loaded_models = load_models(metrics, directory)
+def get_last_week_data(importance_df, without_normalization_df, metric):
+    weeks = importance_df['week'].unique()
+    last_week = weeks.max()
+    previous_week = weeks[-2] if len(weeks) > 1 else last_week
+    metric = metric.replace('_model', '')
 
-importance_dfs = {metric: compute_feature_importances(model) for metric, model in loaded_models.items()}
+    last_week_top_10 = importance_df[importance_df['week'] == last_week].sort_values(by='importance', ascending=False).head(10)
+    previous_week_top_10 = importance_df[importance_df['week'] == previous_week].sort_values(by='importance', ascending=False).head(10)
+
+    new_this_week = set(last_week_top_10['feature']) - set(previous_week_top_10['feature'])
+
+    last_week_values = without_normalization_df[without_normalization_df['week'] == last_week][last_week_top_10['feature'].tolist() + ['day']].set_index('day').to_dict()
+    last_week_values = {str(k): {str(inner_k): inner_v for inner_k, inner_v in v.items()} for k, v in last_week_values.items()} 
+
+    metric_last_week_values = without_normalization_df[without_normalization_df['week'] == last_week][[metric, 'day']].set_index('day').to_dict()
+    metric_last_week_values = {str(k): {str(inner_k): inner_v for inner_k, inner_v in v.items()} for k, v in metric_last_week_values.items()}
+
+    results = {
+        'new_this_week': list(new_this_week),
+        'last_week_values': last_week_values,
+        'last_week_top_10': last_week_top_10.set_index('feature')['importance'].to_dict(),
+        'metric_last_week_values': metric_last_week_values,
+    }
+    
+    return results
