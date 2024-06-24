@@ -8,7 +8,7 @@ from sklearn.exceptions import InconsistentVersionWarning
 
 warnings.filterwarnings("ignore", category=InconsistentVersionWarning)
 
-class GenerateInsightsModel:
+class GenerateRowInsightsModel:
     def __init__(self, directory="ml_models"):
         self.directory = directory
         self.metrics = ['daily_activity_score', 'daily_readiness_score', 'daily_stress_day_summary', 'daily_sleep_score']
