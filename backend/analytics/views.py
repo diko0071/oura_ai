@@ -5,8 +5,11 @@ import os
 from dotenv import load_dotenv
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
-from .services import row_insights_for_metric, openai_call
+from .services import openai_call
 from .prompts import get_ai_insgihts_for_metric_prompt
+from .model_services import GenerateRowInsightsModel
+
+model = GenerateRowInsightsModel()
 
 load_dotenv()
 
@@ -212,7 +215,7 @@ def get_insights_for_metric(request):
     metric = request.query_params.get('metric')
     api = request.query_params.get('api')
 
-    insights = row_insights_for_metric(metric, api)
+    insights = model.get_row_insights_for_metric(metric, api)
 
     ai_insights = openai_call(human_message=f'Key metric you MUST provide insights for: {metric}.\n\nAdditional context data: {str(insights)}', system_message = get_ai_insgihts_for_metric_prompt)
 

@@ -184,3 +184,22 @@ class GenerateRowInsightsModel:
         }
         
         return results
+    
+
+    def get_row_insights_for_metric(self, metric, api):
+        loaded_model = self.load_model(metric)
+        aggregated_data = self.aggregate_data(api)
+
+        feature_importances = self.compute_feature_importances(loaded_model)
+        
+        last_week_insights = self.get_last_week_data(feature_importances, aggregated_data, metric)
+        last_month_insights = self.get_last_month_data(feature_importances, aggregated_data)
+        last_3months_insights = self.get_last_3months_data(feature_importances, aggregated_data)
+        
+        insights = {
+            'last_week': last_week_insights,
+            'last_month': last_month_insights,
+            'last_3months': last_3months_insights
+        }
+
+        return insights
