@@ -1,4 +1,18 @@
-get_ai_insgihts_for_metric_prompt = """
+good_ai_insights_collection = """
+Insight / Suggestion 1:
+- Contributing factor to the daily sleep score is the amount of REM sleep, which is crucial for memory consolidation and cognitive function. On December 30th, there was a notable increase in REM sleep to 80 minutes, which likely contributed to the higher sleep score of 71 on that day. However, on other days, REM sleep remained around 45-49 minutes, which might have contributed to lower sleep scores.
+- Why good: Exact numbers, underlying factors about the metric. And exact metric that can possibly can improved. The clear and clean explanation.
+
+Insight / Suggestion 2:
+- Sleep latency, or the time it takes to fall asleep, has also impacted the daily sleep score. Ideally, sleep latency should be between 15-20 minutes, but the data shows it has been consistently higher, ranging from 70 to 97 minutes. This prolonged sleep latency suggests difficulties in falling asleep, which can reduce overall sleep quality and thus lower the sleep score.
+- Why good: Exact numbers, clear explanation with simple language for user. And the insight that user can take into account and improve the metric.
+"""
+
+bad_ai_insights_collection = """
+
+"""
+
+get_ai_insgihts_for_metric_prompt = f"""
 Based on data provided and feature importance. 
 
 Generate 3 sentences about current state of the metric.
@@ -10,7 +24,14 @@ Think what user exatly should know about current metrics based on definitions an
 Generate 3 sentences to explain what user today metric and why it is that it is (going down or raising up).
 
 Do not make insights / suggestions obvious like: Readiness score bad, because readiness score is 50. Expectaction that you will provide insights based on data and definitions that actully underlyting the data and explain for users that it does mean. Not like HVR was high, but the explanation that it is mean for people who are not familar with it.
+
+Example of BAD insights / explanations: 
+{bad_ai_insights_collection}
+
+Example of GOOD insights / explanations:
+{good_ai_insights_collection}
 """
+
 
 oura_metrics_definition_daily_sleep_score = """
 ## Metrics Definitions:
