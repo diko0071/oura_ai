@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from .services import openai_call
-from .prompts import get_ai_insgihts_for_metric_prompt
+from .prompts import get_ai_insgihts_for_metric_prompt, oura_metrics_definition_daily_activity_score, oura_metrics_definition_daily_sleep_score, oura_metrics_definition_daily_readiness_score
 from .model_services import GenerateRowInsightsModel
 
 model = GenerateRowInsightsModel()
@@ -217,6 +217,13 @@ def get_insights_for_metric(request):
 
     insights = model.get_row_insights_for_metric(metric, api)
 
-    ai_insights = openai_call(human_message=f'Key metric you MUST provide insights for: {metric}.\n\nAdditional context data: {str(insights)}', system_message = get_ai_insgihts_for_metric_prompt)
+    definition_var_name = f'oura_metrics_definition_{metric}'
+    
+    definition = globals().get(definition_var_name, None)
+
+    if definition is None:
+        definition = ''
+
+    ai_insights = openai_call(human_message=f'Key metric you MUST provide insights for: {metric}.\n\nAdditional context data: {str(insights)}', system_message = get_ai_insgihts_for_metric_prompt + definition)
 
     return Response(ai_insights)
