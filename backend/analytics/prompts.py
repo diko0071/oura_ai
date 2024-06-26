@@ -30,6 +30,11 @@ Example of BAD insights / explanations:
 
 Example of GOOD insights / explanations:
 {good_ai_insights_collection}
+
+The decision about impact of metric you MUST do based on several factors:
+1) Importance coefficients of features that are important for target metric.
+2) How frequenctly this feature on the list. What new feature on the list that we impact the main metric? 
+3) Values of features and target metric. Each feature for current and previous week have real values by days. For last month and 3 month — it has mean values and also features. Keep everything in mind.
 """
 
 

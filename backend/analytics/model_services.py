@@ -111,16 +111,42 @@ class GenerateRowInsightsModel:
         else:
             return pd.DataFrame(columns=['feature', 'importance', 'week'])
         
+    def get_current_week_data(self, importance_df, without_normalization_df, metric):
+        weeks = importance_df['week'].unique()
+        last_week = weeks[-2]
+        current_week = weeks[-1]
+        metric = metric.replace('_model', '')
+
+        current_week_top_10 = importance_df[importance_df['week'] == current_week].sort_values(by='importance', ascending=False).head(10)
+        last_week_top_10 = importance_df[importance_df['week'] == last_week].sort_values(by='importance', ascending=False).head(10)
+
+        new_this_week = set(current_week_top_10['feature']) - set(last_week_top_10['feature'])
+
+        current_week_values = without_normalization_df[without_normalization_df['week'] == current_week][current_week_top_10['feature'].tolist() + ['day']].set_index('day').to_dict()
+        current_week_values = {str(k): {str(inner_k): inner_v for inner_k, inner_v in v.items()} for k, v in current_week_values.items()} 
+
+        metric_current_week_values = without_normalization_df[without_normalization_df['week'] == current_week][[metric, 'day']].set_index('day').to_dict()
+        metric_current_week_values = {str(k): {str(inner_k): inner_v for inner_k, inner_v in v.items()} for k, v in metric_current_week_values.items()}
+
+        results = {
+            'metric_current_week_values': f'{metric} current week values by days: {metric_current_week_values}',
+            'new_this_week': f'New features this week: {list(new_this_week)}',
+            'current_week_top_10': f'Current week top 10 features and their importantce coefficients: {current_week_top_10.to_dict()}',
+            'current_week_values': f'Current week top 10 features mean values: {current_week_values}',
+        }
+        
+        return results
+    
     def get_last_week_data(self, importance_df, without_normalization_df, metric):
         weeks = importance_df['week'].unique()
-        last_week = weeks.max()
-        previous_week = weeks[-2] if len(weeks) > 1 else last_week
+        last_week = weeks[-2]
+        last_last_week = weeks[-3]
         metric = metric.replace('_model', '')
 
         last_week_top_10 = importance_df[importance_df['week'] == last_week].sort_values(by='importance', ascending=False).head(10)
-        previous_week_top_10 = importance_df[importance_df['week'] == previous_week].sort_values(by='importance', ascending=False).head(10)
+        last_last_week_top_10 = importance_df[importance_df['week'] == last_last_week].sort_values(by='importance', ascending=False).head(10)
 
-        new_this_week = set(last_week_top_10['feature']) - set(previous_week_top_10['feature'])
+        new_last_week = set(last_week_top_10['feature']) - set(last_last_week_top_10['feature'])
 
         last_week_values = without_normalization_df[without_normalization_df['week'] == last_week][last_week_top_10['feature'].tolist() + ['day']].set_index('day').to_dict()
         last_week_values = {str(k): {str(inner_k): inner_v for inner_k, inner_v in v.items()} for k, v in last_week_values.items()} 
@@ -129,10 +155,10 @@ class GenerateRowInsightsModel:
         metric_last_week_values = {str(k): {str(inner_k): inner_v for inner_k, inner_v in v.items()} for k, v in metric_last_week_values.items()}
 
         results = {
-            'new_this_week': list(new_this_week),
-            'last_week_values': last_week_values,
-            'last_week_top_10': last_week_top_10.set_index('feature')['importance'].to_dict(),
-            'metric_last_week_values': metric_last_week_values,
+            'metric_last_week_values': f'{metric} last week values by days: {metric_last_week_values}',
+            'new_last_week': f'New features last week: {list(new_last_week)}',
+            'last_week_top_10': f'Last week top 10 features and their importantce coefficients: {last_week_top_10.to_dict()}',
+            'last_week_values': f'Last week top 10 features mean values: {last_week_values}',
         }
         
         return results
@@ -152,11 +178,13 @@ class GenerateRowInsightsModel:
 
         consistent_monthly_features = set.intersection(*[set(importance_df[importance_df['week'] == week].sort_values(by='importance', ascending=False).head(20)['feature']) for week in last_month_weeks])
 
+        consistent_monthly_features = {feature: importance_df[importance_df['feature'] == feature]['importance'].mean() for feature in consistent_monthly_features}
+
         results = {
-            'new_this_month': list(new_this_month),
-            'last_month_values': last_month_values,
-            'last_month_top_10': last_month_top_10.to_dict(),
-            'consistent_monthly_features': {feature: importance_df[importance_df['feature'] == feature]['importance'].mean() for feature in consistent_monthly_features},
+            'new_this_month': f'New features this month: {list(new_this_month)}',
+            'last_month_top_10': f'Last month top 10 features and their importantce coefficients:: {last_month_top_10.to_dict()}',
+            'last_month_values': f'Last month top 10 features mean values: {last_month_values}',
+            'consistent_monthly_features': f'Consistent monthly features (appear in last months consistently): {consistent_monthly_features}',
         }
         
         return results
@@ -177,10 +205,10 @@ class GenerateRowInsightsModel:
         consistent_3months_features = set.intersection(*[set(importance_df[importance_df['week'] == week].sort_values(by='importance', ascending=False).head(20)['feature']) for week in last_3months_weeks])
 
         results = {
-            'new_this_3months': list(new_this_3months),
-            'last_3months_values': last_3months_values,
-            'last_3months_top_10': last_3months_top_10.to_dict(),
-            'consistent_3months_features': {feature: importance_df[importance_df['feature'] == feature]['importance'].mean() for feature in consistent_3months_features},
+            'new_this_3months': f'New features this month: {list(new_this_3months)}',
+            'last_3months_top_10': f'Last 3 month top 10 features and their importantce coefficients:: {last_3months_top_10.to_dict()}',
+            'last_3months_values': f'Last 3 month top 10 features mean values: {last_3months_values}',
+            'consistent_3months_features': f'Consistent 3 month features (appear in 3 last months consistently): {consistent_3months_features}',
         }
         
         return results
@@ -192,11 +220,13 @@ class GenerateRowInsightsModel:
 
         feature_importances = self.compute_feature_importances(loaded_model)
         
+        current_week_insights = self.get_current_week_data(feature_importances, aggregated_data, metric)
         last_week_insights = self.get_last_week_data(feature_importances, aggregated_data, metric)
         last_month_insights = self.get_last_month_data(feature_importances, aggregated_data)
         last_3months_insights = self.get_last_3months_data(feature_importances, aggregated_data)
         
         insights = {
+            'current_week': current_week_insights,
             'last_week': last_week_insights,
             'last_month': last_month_insights,
             'last_3months': last_3months_insights
