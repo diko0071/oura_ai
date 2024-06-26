@@ -5,6 +5,12 @@ import requests
 import warnings
 from datetime import datetime
 from sklearn.exceptions import InconsistentVersionWarning
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
 
 warnings.filterwarnings("ignore", category=InconsistentVersionWarning)
 
@@ -233,3 +239,141 @@ class GenerateRowInsightsModel:
         }
 
         return insights
+    
+
+class TrainUpdateModel:
+    def __init__(self, directory="ml_models"):
+        self.directory = directory
+        self.metrics = ['daily_activity_score', 'daily_readiness_score', 'daily_stress_day_summary', 'daily_sleep_score']
+        self.api = [
+            'daily_sleep',
+            'daily_readiness',
+            'daily_stress',
+            'daily_activity',
+        ]
+
+    def get_data(self, api):
+        params={ 
+            'start_date': '2021-11-01', 
+            'end_date': f'{datetime.now().date()}' 
+        }   
+
+        url = f'https://api.ouraring.com/v2/usercollection/{api}'
+        headers = { 
+            'Authorization': f'Bearer {os.getenv("OURA_TOKEN")}' 
+        }
+        response = requests.request('GET', url, headers=headers, params=params) 
+        data = response.json()['data']
+
+        rows = []
+
+        for item in data: 
+            row = item.copy()
+
+            if 'contributors' in item:
+                row.update(item['contributors'])
+                del row['contributors']
+            
+            rows.append(row)
+        
+        return rows
+    
+    def aggregate_data(self, api):
+        combined_df = pd.DataFrame()
+
+        for api in self.api:
+            data = self.get_data(api)
+            df = pd.DataFrame(data)
+            df['day'] = pd.to_datetime(df['day']).dt.date
+            df = df.set_index('day')
+            df.columns = [f'{api}_{col}' for col in df.columns]
+            
+            if combined_df.empty:
+                combined_df = df
+            else:
+                combined_df = combined_df.join(df, how='outer')
+        
+        combined_df = combined_df.reset_index()
+
+        combined_df['week'] = pd.to_datetime(combined_df['day']).dt.isocalendar().week
+
+        columns_to_drop = ['daily_sleep_id', 'daily_sleep_timestamp', 'daily_readiness_id', 
+                        'daily_readiness_timestamp', 'daily_stress_id', 'daily_activity_id', 
+                        'daily_activity_timestamp', 'daily_activity_met', 'daily_activity_class_5_min']
+
+        resulted_df = combined_df.drop(columns=[col for col in columns_to_drop if col in combined_df.columns])
+
+        resulted_df = resulted_df.dropna(axis=1, how='all')
+
+        numeric_columns = resulted_df.select_dtypes(include=['float64', 'int64'])
+
+        scaler = StandardScaler()
+        
+        resulted_df[numeric_columns.columns] = scaler.fit_transform(resulted_df[numeric_columns.columns])
+
+        return resulted_df
+    
+    def train_model(self, target, api):
+
+        df = self.aggregate_data(api)
+
+        weeks = df['week'].unique()
+        imputer_X = SimpleImputer(strategy='mean')
+        imputer_y = SimpleImputer(strategy='mean')
+        
+        models = {}
+
+        for week in weeks:
+            df_week = df[df['week'] == week]
+            if df_week.empty:
+                continue
+            
+            X_week = df_week.drop(columns=[target, 'day', 'week'], errors='ignore')
+            
+            X_week = X_week.select_dtypes(include=[float, int])
+            
+            if X_week.empty or X_week.shape[0] == 0 or X_week.shape[1] == 0:
+                continue
+            
+            X_week = X_week.dropna(axis=1, how='all')
+            imputed_data = imputer_X.fit_transform(X_week)
+            X_week = pd.DataFrame(imputed_data, columns=X_week.columns)
+            
+            y_week = df_week[target]
+            if y_week.empty or len(y_week) == 0:
+                continue
+            
+            imputer_y.fit(y_week.values.reshape(-1, 1))
+            y_week = pd.Series(imputer_y.transform(y_week.values.reshape(-1, 1)).flatten())
+            
+            X_train, X_test, y_train, y_test = train_test_split(X_week, y_week, test_size=0.2, random_state=42)
+            
+            model = RandomForestRegressor(n_estimators=100, random_state=42)
+            model.fit(X_train, y_train)
+            
+            models[week] = {'model': model, 'X_test': X_test, 'y_test': y_test, 'X_columns': X_week.columns}
+        
+        return models
+
+    def save_model(self, model, metric):
+        filename = f'{metric}_model.pkl'
+        with open(os.path.join(self.directory, filename), 'wb') as file:
+            pickle.dump(model, file)
+
+    def evaluate_model(self, models):
+        weekly_metrics = []
+
+        for week, data in models.items():
+            model = data['model']
+            X_test = data['X_test']
+            y_test = data['y_test']
+            
+            y_pred = model.predict(X_test)
+            
+            mse = mean_squared_error(y_test, y_pred)
+            mae = mean_absolute_error(y_test, y_pred)
+            r2 = r2_score(y_test, y_pred)
+            
+            weekly_metrics.append({'week': week, 'MSE': mse, 'MAE': mae, 'R2': r2})
+    
+        return weekly_metrics
