@@ -1,3 +1,7 @@
+from .services import get_today
+
+today = get_today()
+
 good_ai_insights_collection = """
 Insight / Suggestion 1:
 - Contributing factor to the daily sleep score is the amount of REM sleep, which is crucial for memory consolidation and cognitive function. On December 30th, there was a notable increase in REM sleep to 80 minutes, which likely contributed to the higher sleep score of 71 on that day. However, on other days, REM sleep remained around 45-49 minutes, which might have contributed to lower sleep scores.
@@ -35,6 +39,9 @@ The decision about impact of metric you MUST do based on several factors:
 1) Importance coefficients of features that are important for target metric.
 2) How frequenctly this feature on the list. What new feature on the list that we impact the main metric? 
 3) Values of features and target metric. Each feature for current and previous week have real values by days. For last month and 3 month — it has mean values and also features. Keep everything in mind.
+4) Focus ONLY on today metric and try to explain today's value of the Target metric. 
+
+Today date: {today}
 """
 
 
