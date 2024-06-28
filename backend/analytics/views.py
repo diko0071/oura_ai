@@ -217,6 +217,8 @@ def get_insights_for_metric(request):
     metric = request.query_params.get('metric')
     api = request.query_params.get('api')
 
+    user = request.user
+
     insights = model.get_row_insights_for_metric(metric, api)
 
     definition_var_name = f'oura_metrics_definition_{metric}'
@@ -228,12 +230,12 @@ def get_insights_for_metric(request):
 
     ai_insights = openai_call(human_message=f'Key metric you MUST provide insights for: {metric}.\n\nAdditional context data: {str(insights)}', system_message = get_ai_insgihts_for_metric_prompt + definition)
     
-    #generated_insight = GeneratedInsights.objects.create(
-        #user=request.user,
-        #generated_insights_text=ai_insights,
-        #metric=metric
-    #)
+    generated_insight = GeneratedInsights.objects.create(
+        user=request.user,
+        generated_insights_text=ai_insights,
+        metric=metric
+    )
 
-    #serializer = GeneratedInsightsSerializer(generated_insight)
+    serializer = GeneratedInsightsSerializer(generated_insight)
 
-    return Response(ai_insights)
+    return Response(serializer.data)
