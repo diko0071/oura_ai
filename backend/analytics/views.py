@@ -214,10 +214,9 @@ def oura_heartrate(request):
 
 @api_view(['GET'])
 def get_insights_for_metric(request):
-    metric = request.query_params.get('metric')
-    api = request.query_params.get('api')
-
-    user = request.user
+    
+    metric = request.data.get('metric')
+    api = request.data.get('api')
 
     insights = model.get_row_insights_for_metric(metric, api)
 
