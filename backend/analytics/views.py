@@ -8,6 +8,8 @@ from rest_framework.decorators import api_view
 from .services import openai_call
 from .prompts import get_ai_insgihts_for_metric_prompt, oura_metrics_definition_daily_activity_score, oura_metrics_definition_daily_sleep_score, oura_metrics_definition_daily_readiness_score
 from .model_services import GenerateRowInsightsModel
+from .models import GeneratedInsights
+from .serializers import GeneratedInsightsSerializer
 
 model = GenerateRowInsightsModel()
 
@@ -225,5 +227,13 @@ def get_insights_for_metric(request):
         definition = ''
 
     ai_insights = openai_call(human_message=f'Key metric you MUST provide insights for: {metric}.\n\nAdditional context data: {str(insights)}', system_message = get_ai_insgihts_for_metric_prompt + definition)
+    
+    #generated_insight = GeneratedInsights.objects.create(
+        #user=request.user,
+        #generated_insights_text=ai_insights,
+        #metric=metric
+    #)
+
+    #serializer = GeneratedInsightsSerializer(generated_insight)
 
     return Response(ai_insights)

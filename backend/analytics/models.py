@@ -7,8 +7,8 @@ class InsightsMetrics(models.TextChoices):
     DAILY_STRESS_DAY_SUMMARY = 'daily_stress_day_summary', 'Daily Stress Day Summary'
     DAILY_SLEEP_SCORE = 'daily_sleep_score', 'Daily Sleep Score'
 
-class Analytics(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+class GeneratedInsights(models.Model):
+    #user = models.ForeignKey(User, on_delete=models.CASCADE)
     generated_insights_text = models.TextField(null=True, blank=True)
     metric = models.CharField(max_length=255, choices=InsightsMetrics.choices, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
