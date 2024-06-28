@@ -227,7 +227,7 @@ def get_insights_for_metric(request):
     if definition is None:
         definition = ''
 
-    ai_insights = openai_call(human_message=f'Key metric you MUST provide insights for: {metric}.\n\nAdditional context data: {str(insights)}', system_message = get_ai_insgihts_for_metric_prompt + definition)
+    ai_insights = openai_call(human_message=f'Key metric you MUST provide insights for: {metric}.\n\nAdditional context data: {str(insights)}', system_message = get_ai_insgihts_for_metric_prompt + definition, user = request.user)
     
     generated_insight = GeneratedInsights.objects.create(
         user=request.user,

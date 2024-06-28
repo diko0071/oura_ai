@@ -13,3 +13,12 @@ class GeneratedInsights(models.Model):
     metric = models.CharField(max_length=255, choices=InsightsMetrics.choices, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class Prompts(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    system_message = models.TextField()
+    user_message = models.TextField()
+    response = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
