@@ -41,7 +41,7 @@ The decision about impact of metric you MUST do based on several factors:
 3) Values of features and target metric. Each feature for current and previous week have real values by days. For last month and 3 month — it has mean values and also features. Keep everything in mind.
 4) Focus ONLY on today metric and try to explain today's value of the Target metric. 
 
-Today date: {today}
+Today date: {today}. 
 """
 
 
