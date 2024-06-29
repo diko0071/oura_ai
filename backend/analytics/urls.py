@@ -8,4 +8,5 @@ urlpatterns = [
     path('oura/daily_activity/', oura_daily_activity, name='oura-daily-activity'),
     path('oura/heartrate/', oura_heartrate, name='oura-heartrate'),
     path('oura/get_insights_for_metric/', get_insights_for_metric, name='oura-get-insights-for-metric'),
+    path('oura/train_model/', train_model, name='oura-train-model'),
 ]

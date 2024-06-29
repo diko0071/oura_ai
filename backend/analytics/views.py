@@ -7,11 +7,13 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from .services import openai_call
 from .prompts import get_ai_insgihts_for_metric_prompt, oura_metrics_definition_daily_activity_score, oura_metrics_definition_daily_sleep_score, oura_metrics_definition_daily_readiness_score
-from .model_services import GenerateRowInsightsModel
+from .model_services import GenerateRowInsightsModel, TrainUpdateModel
 from .models import GeneratedInsights
 from .serializers import GeneratedInsightsSerializer
 
 model = GenerateRowInsightsModel()
+
+update_train_model = TrainUpdateModel()
 
 load_dotenv()
 
@@ -214,9 +216,10 @@ def oura_heartrate(request):
 
 @api_view(['GET'])
 def get_insights_for_metric(request):
-    
-    metric = request.data.get('metric')
+
     api = request.data.get('api')
+
+    metric = f'{api}_score'
 
     insights = model.get_row_insights_for_metric(metric, api)
 
@@ -238,3 +241,11 @@ def get_insights_for_metric(request):
     serializer = GeneratedInsightsSerializer(generated_insight)
 
     return Response(serializer.data)
+
+
+@api_view(['GET'])
+def train_model(request):
+    
+    update_train_model.train_and_save_models()
+    
+    return Response({'message': 'Model trained'})

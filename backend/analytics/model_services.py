@@ -312,9 +312,8 @@ class TrainUpdateModel:
         resulted_df[numeric_columns.columns] = scaler.fit_transform(resulted_df[numeric_columns.columns])
 
         return resulted_df
-    
-    def train_model(self, target, api):
 
+    def train_model(self, target, api):
         df = self.aggregate_data(api)
 
         weeks = df['week'].unique()
@@ -355,10 +354,24 @@ class TrainUpdateModel:
         
         return models
 
-    def save_model(self, model, metric):
+    def save_model(self, model, metric, api):
         filename = f'{metric}_model.pkl'
-        with open(os.path.join(self.directory, filename), 'wb') as file:
+        file_path = os.path.join(self.directory, filename)
+        
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        
+        with open(file_path, 'wb') as file:
             pickle.dump(model, file)
+
+    def train_and_save_models(self):
+        for metric in self.metrics:
+            if metric == 'daily_stress_day_summary':
+                continue
+            for api in self.api:
+                models = self.train_model(metric, api)
+                self.save_model(models, metric, api)
+        return "Models trained and saved"
 
     def evaluate_model(self, models):
         weekly_metrics = []

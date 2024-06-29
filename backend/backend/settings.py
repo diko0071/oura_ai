@@ -36,8 +36,8 @@ ALLOWED_HOSTS = ["*"]
 AUTH_USER_MODEL = 'useraccount.User'
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ACCESS_TOKEN_LIFETIME": timedelta(weeks=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(weeks=1),
     "ROTATE_REFRESH_TOKEN": False,
     "BLACKLIST_AFTER_ROTATION": False,
     "UPDATE_LAST_LOGIN": True,
@@ -60,6 +60,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     'analytics',
+    'django_celery_beat',
+    'celery',
     'chat',
     'useraccount',
     "rest_framework",
@@ -166,6 +168,12 @@ REST_AUTH = {
     "USE_JWT": True,
     "JWT_AUTH_HTTPONLY": False
 }
+
+CELERY_BROKER_URL = os.environ.get('REDIS_URL')
+accept_content = ['json']
+task_serializer = 'json'
+result_serializer = 'json'
+result_backend = os.environ.get('REDIS_URL')
 
 
 LANGUAGE_CODE = "en-us"
