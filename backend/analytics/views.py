@@ -10,6 +10,8 @@ from .prompts import get_ai_insgihts_for_metric_prompt, oura_metrics_definition_
 from .model_services import GenerateRowInsightsModel, TrainUpdateModel
 from .models import GeneratedInsights
 from .serializers import GeneratedInsightsSerializer
+from datetime import datetime, timedelta
+import json
 
 model = GenerateRowInsightsModel()
 
@@ -175,16 +177,21 @@ def oura_daily_sleep(request):
 
     return Response(sleep_data)
 
-
 @api_view(['GET'])
 def oura_daily_readiness(request):
-    start_date = '2022-01-01'
-    end_date = '2024-12-01'
+    end_date = datetime.today().strftime('%Y-%m-%d')
+    start_date = (datetime.today() - timedelta(days=7)).strftime('%Y-%m-%d')
 
-    sleep_data = get_readiness_data(start_date, end_date)
+    readiness_data = get_readiness_data(start_date, end_date)
 
 
-    return Response(sleep_data)
+    transformed_data = {
+        'days': [item['day'] for item in readiness_data],
+        'scores': [item['score'] for item in readiness_data],
+        'metric': 'Daily Readiness Score'
+    }
+
+    return Response(transformed_data)
 
 @api_view(['GET'])
 def oura_daily_stress(request):
@@ -212,6 +219,7 @@ def oura_heartrate(request):
     sleep_data = get_heart_data(start_date, end_date)
 
     return Response(sleep_data)
+    
 
 
 @api_view(['GET'])
