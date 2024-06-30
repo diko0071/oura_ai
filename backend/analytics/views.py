@@ -168,22 +168,11 @@ def get_heart_data(start_date, end_date):
     return rows
 
 @api_view(['GET'])
-def oura_daily_sleep(request):
-    start_date = '2022-01-01'
-    end_date = '2024-12-01'
-
-    sleep_data = get_sleep_data(start_date, end_date)
-
-
-    return Response(sleep_data)
-
-@api_view(['GET'])
 def oura_daily_readiness(request):
     end_date = datetime.today().strftime('%Y-%m-%d')
     start_date = (datetime.today() - timedelta(days=7)).strftime('%Y-%m-%d')
 
     readiness_data = get_readiness_data(start_date, end_date)
-
 
     transformed_data = {
         'days': [item['day'] for item in readiness_data],
@@ -193,23 +182,54 @@ def oura_daily_readiness(request):
 
     return Response(transformed_data)
 
+
 @api_view(['GET'])
-def oura_daily_stress(request):
-    start_date = '2022-01-01'
-    end_date = '2024-12-01'
+def oura_daily_sleep(request):
+    end_date = datetime.today().strftime('%Y-%m-%d')
+    start_date = (datetime.today() - timedelta(days=7)).strftime('%Y-%m-%d')
 
-    sleep_data = get_stress_data(start_date, end_date)
+    sleep_data = get_sleep_data(start_date, end_date)
 
-    return Response(sleep_data)
+
+    transformed_data = {
+        'days': [item['day'] for item in sleep_data],
+        'scores': [item['score'] for item in sleep_data],
+        'metric': 'Daily Sleep Score'
+    }
+
+    return Response(transformed_data)
 
 @api_view(['GET'])
 def oura_daily_activity(request):
-    start_date = '2022-01-01'
-    end_date = '2024-12-01'
+    end_date = datetime.today().strftime('%Y-%m-%d')
+    start_date = (datetime.today() - timedelta(days=7)).strftime('%Y-%m-%d')
 
-    sleep_data = get_activity_data(start_date, end_date)
+    activity_data = get_activity_data(start_date, end_date)
 
-    return Response(sleep_data)
+
+    transformed_data = {
+        'days': [item['day'] for item in activity_data],
+        'scores': [item['score'] for item in activity_data],
+        'metric': 'Daily Activity Score'
+    }
+
+    return Response(transformed_data)
+
+
+@api_view(['GET'])
+def oura_daily_stress(request):
+    end_date = datetime.today().strftime('%Y-%m-%d')
+    start_date = (datetime.today() - timedelta(days=7)).strftime('%Y-%m-%d')
+
+    stress_data = get_stress_data(start_date, end_date)
+
+    transformed_data = {
+        'days': [item['day'] for item in stress_data],
+        'scores': [item['score'] for item in stress_data],
+        'metric': 'Daily Stress Score'
+    }
+
+    return Response(transformed_data)
 
 @api_view(['GET'])
 def oura_heartrate(request):
@@ -219,8 +239,6 @@ def oura_heartrate(request):
     sleep_data = get_heart_data(start_date, end_date)
 
     return Response(sleep_data)
-    
-
 
 @api_view(['GET'])
 def get_insights_for_metric(request):
