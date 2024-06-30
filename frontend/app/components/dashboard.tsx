@@ -2,7 +2,6 @@
 import Link from "next/link"
 import React, { useState, useEffect } from 'react';
 import {
-  Activity,
   ArrowUpRight,
   CircleUser,
   CreditCard,
@@ -11,6 +10,8 @@ import {
   Package2,
   Search,
   Users,
+  Activity,
+  CircleHelp,
 } from "lucide-react"
 
 import {
@@ -21,6 +22,12 @@ import {
 } from "@/components/ui/tabs"
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card"
 
 import {
   ChevronLeft,
@@ -91,6 +98,42 @@ function processApiData(apiResponse: any, metric: string): MetricScore {
   }
 }
 
+const metricDefinitions = {
+  readiness: "Readiness Score — score that indicates how well you are prepared for work or other tasks. It is a measure of your physical and mental well-being.",
+  sleep: "Sleep Score — score that indicates the quality and duration of your sleep. It helps you understand your sleep patterns.",
+  activity: "Activity Score — score that measures your physical activity levels throughout the day. It helps you track your fitness progress.",
+  stress: "Stress Score — score that indicates your stress levels. It helps you manage and reduce stress for better well-being."
+};
+
+const metricInsights = {
+  readiness: [
+    "Your readiness score is highest on Wednesday. Consider scheduling important tasks on this day. But HRV still big.",
+    "Your readiness score drops on Friday. Ensure you get enough rest on Thursday night."
+  ],
+  sleep: [
+    "You have the best sleep quality on Tuesday. Try to replicate your Tuesday night routine.",
+    "Your sleep quality is lowest on Sunday. Consider relaxing activities before bed on Saturday night. Reduce sleep latency."
+  ],
+  activity: [
+    "Your activity level peaks on Thursday. Keep up the good work!",
+    "Your activity level is lowest on Monday. Try to incorporate a short walk or exercise session."
+  ],
+  stress: [
+    "Your stress level is lowest on Saturday. Use this day to recharge.",
+    "Your stress level peaks on Wednesday. Practice mindfulness or relaxation techniques mid-week."
+  ]
+};
+
+const secondaryMetrics = {
+  HRV: "HRV (Heart Rate Variability) — a measure of the variation in time between each heartbeat. It is an indicator of your autonomic nervous system activity.",
+  "Sleep Score": "Sleep Score — a score that indicates the quality and duration of your sleep. It helps you understand your sleep patterns.",
+  "No Activity Score": "No Activity Score — a score that indicates periods of inactivity. It helps you track sedentary behavior.",
+  "Sleep Latency": "Sleep Latency — the amount of time it takes you to fall asleep. It is an indicator of your sleep onset.",
+  "Stress Level": "Stress Level — a score that indicates your stress levels. It helps you manage and reduce stress for better well-being.",
+  "Activity Level": "Activity Level — a score that measures your physical activity levels throughout the day. It helps you track your fitness progress.",
+  "Sleep Quality": "Sleep Quality — a score that indicates the quality of your sleep. It helps you understand your sleep patterns."
+};
+
 function generateMockData(): UnifiedData {
   const mockMetricData = (metric: string): MetricScore => ({
     days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
@@ -109,6 +152,35 @@ function generateMockData(): UnifiedData {
 export default function Dashboard() {
   const [loading, setLoading] = useState<boolean>(false);
   const [data, setData] = useState<UnifiedData | null>(null);
+
+  const wrapSecondaryMetrics = (text: string) => {
+    const metrics = ["HRV", "Sleep Score", "No Activity Score", "Sleep Latency", "Stress Level", "Activity Level", "Sleep Quality"];
+    const regex = new RegExp(`\\b(${metrics.join('|')})\\b`, 'gi');
+  
+    return text.split(regex).map((part, index) => {
+      const lowerPart = part.toLowerCase();
+      const matchedMetric = metrics.find(metric => metric.toLowerCase() === lowerPart);
+  
+      if (matchedMetric) {
+        return (
+          <HoverCard key={index}>
+            <HoverCardTrigger className="inline-flex items-center">
+              <span className="cursor-pointer inline-flex items-center font-semibold">
+                <CircleHelp className="mr-0.5" size={10} />
+                {part}
+              </span>
+            </HoverCardTrigger>
+            <HoverCardContent>
+              <p className="text-sm text-muted-foreground">
+                {secondaryMetrics[matchedMetric as keyof typeof secondaryMetrics]}
+              </p>
+            </HoverCardContent>
+          </HoverCard>
+        );
+      }
+      return part;
+    });
+  };
 
   React.useEffect(() => {
     setLoading(true);
@@ -148,12 +220,19 @@ export default function Dashboard() {
   return (
 <div className="flex min-h-screen w-full flex-col">
   <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-    <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-2">
+  <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-2">
       <Card x-chunk="dashboard-01-chunk-0">
         <CardHeader className="flex flex-col items-start space-y-2">
-          <CardTitle className="font-semibold">
-            {data?.readiness.metric}
-          </CardTitle>
+          <HoverCard>
+            <HoverCardTrigger>
+            <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
+                {data?.readiness.metric}
+              </CardTitle>
+            </HoverCardTrigger>
+            <HoverCardContent>
+              <p className="text-sm text-muted-foreground">{metricDefinitions.readiness}</p>
+            </HoverCardContent>
+          </HoverCard>  
           <CardDescription className="text-sm text-muted-foreground">
             Readiness scores for the week.
           </CardDescription>
@@ -187,13 +266,30 @@ export default function Dashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-        </CardContent>
+  <ul>
+    {metricInsights.readiness.map((insight, index) => (
+      <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
+        <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
+        <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
+      </li>
+    ))}
+  </ul>
+</CardContent>
       </Card>
       <Card x-chunk="dashboard-01-chunk-1">
         <CardHeader className="flex flex-col items-start space-y-2">
-          <CardTitle className="font-semibold">
-            {data?.sleep.metric}
-          </CardTitle>
+            <HoverCard>
+              <HoverCardTrigger>
+                <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
+                  {data?.sleep.metric}
+                </CardTitle>
+              </HoverCardTrigger>
+              <HoverCardContent>
+                <p className="text-sm text-muted-foreground">
+                  {metricDefinitions.sleep}
+                </p>
+              </HoverCardContent>
+            </HoverCard>
           <CardDescription className="text-sm text-muted-foreground">
             Comparison of your sleep scores across the week.
           </CardDescription>
@@ -227,13 +323,30 @@ export default function Dashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <ul>
+            {metricInsights.sleep.map((insight, index) => (
+              <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
+                <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
+                <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
+              </li>
+            ))}
+          </ul>
         </CardContent>
       </Card>
       <Card x-chunk="dashboard-01-chunk-2">
   <CardHeader className="flex flex-col items-start space-y-2">
-    <CardTitle className="font-semibold">
-      {data?.activity.metric}
-    </CardTitle>
+          <HoverCard>
+            <HoverCardTrigger>
+              <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
+                {data?.activity.metric}
+            </CardTitle>
+          </HoverCardTrigger>
+          <HoverCardContent>
+            <p className="text-sm text-muted-foreground">
+              {metricDefinitions.activity}
+            </p>
+          </HoverCardContent>
+        </HoverCard>
     <CardDescription className="text-sm text-muted-foreground">
       Comparison of your activity scores across the week.
     </CardDescription>
@@ -267,13 +380,30 @@ export default function Dashboard() {
     </CardDescription>
   </CardHeader>
   <CardContent>
+  <ul>
+  {metricInsights.activity.map((insight, index) => (
+    <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
+      <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
+      <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
+    </li>
+  ))}
+</ul>
   </CardContent>
 </Card>
 <Card x-chunk="dashboard-01-chunk-3">
   <CardHeader className="flex flex-col items-start space-y-2">
-    <CardTitle className="font-semibold">
-      {data?.stress.metric}
-    </CardTitle>
+  <HoverCard>
+    <HoverCardTrigger>
+      <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
+        {data?.stress.metric}
+      </CardTitle>
+    </HoverCardTrigger>
+    <HoverCardContent>
+      <p className="text-sm text-muted-foreground">
+        {metricDefinitions.stress}
+      </p>
+    </HoverCardContent>
+  </HoverCard>
     <CardDescription className="text-sm text-muted-foreground">
       Comparison of your stress scores across the week.
     </CardDescription>
@@ -307,6 +437,14 @@ export default function Dashboard() {
     </CardDescription>
   </CardHeader>
   <CardContent>
+  <ul>
+  {metricInsights.stress.map((insight, index) => (
+    <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
+      <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
+      <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
+    </li>
+  ))}
+</ul>
   </CardContent>
 </Card>
         </div>
