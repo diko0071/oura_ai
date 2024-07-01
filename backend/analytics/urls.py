@@ -9,4 +9,7 @@ urlpatterns = [
     path('oura/heartrate/', oura_heartrate, name='oura-heartrate'),
     path('oura/get_insights_for_metric/', get_insights_for_metric, name='oura-get-insights-for-metric'),
     path('oura/train_model/', train_model, name='oura-train-model'),
+    path('oura/get_generated_insights_for_readiness/', get_generated_insights_for_readiness, name='oura-get-generated-insights-for-readiness'),
+    path('oura/get_generated_insights_for_sleep/', get_generated_insights_for_sleep, name='oura-get-generated-insights-for-sleep'),
+    path('oura/get_generated_insights_for_activity/', get_generated_insights_for_activity, name='oura-get-generated-insights-for-activity'),
 ]

@@ -87,7 +87,6 @@ export type UnifiedData = {
   readiness: MetricScore
   sleep: MetricScore
   activity: MetricScore
-  stress: MetricScore
 }
 
 function processApiData(apiResponse: any, metric: string): MetricScore {
@@ -145,13 +144,22 @@ function generateMockData(): UnifiedData {
     readiness: mockMetricData('Readiness Score'),
     sleep: mockMetricData('Sleep Score'),
     activity: mockMetricData('Activity Score'),
-    stress: mockMetricData('Stress Score')
   };
+}
+
+function processInsightsData(apiResponse: any): string[] {
+  if (apiResponse && apiResponse.generated_insights_text) {
+    return apiResponse.generated_insights_text.split('\n\n');
+  }
+  return [];
 }
 
 export default function Dashboard() {
   const [loading, setLoading] = useState<boolean>(false);
   const [data, setData] = useState<UnifiedData | null>(null);
+  const [readinessInsights, setReadinessInsights] = useState<string[]>([]);
+  const [sleepInsights, setSleepInsights] = useState<string[]>([]);
+  const [activityInsights, setActivityInsights] = useState<string[]>([]);
 
   const wrapSecondaryMetrics = (text: string) => {
     const metrics = ["HRV", "Sleep Score", "No Activity Score", "Sleep Latency", "Stress Level", "Activity Level", "Sleep Quality"];
@@ -187,21 +195,26 @@ export default function Dashboard() {
     const fetchReadiness = ApiService.get('/api/oura/daily_readiness/');
     const fetchSleep = ApiService.get('/api/oura/daily_sleep/');
     const fetchActivity = ApiService.get('/api/oura/daily_activity/');
-    const fetchStress = ApiService.get('/api/oura/daily_stress/');
+    const fetchReadinessInsights = ApiService.get('/api/oura/get_generated_insights_for_readiness/');
+    const fetchSleepInsights = ApiService.get('/api/oura/get_generated_insights_for_sleep/');
+    const fetchActivityInsights = ApiService.get('/api/oura/get_generated_insights_for_activity/');
 
-    Promise.all([fetchReadiness, fetchSleep, fetchActivity, fetchStress])
-      .then(([readinessData, sleepData, activityData, stressData]) => {
+    Promise.all([fetchReadiness, fetchSleep, fetchActivity, fetchReadinessInsights, fetchSleepInsights, fetchActivityInsights])
+      .then(([readinessData, sleepData, activityData, readinessInsightsData, sleepInsightsData, activityInsightsData]) => {
         const readinessScore = processApiData(readinessData, 'Readiness Score');
         const sleepScore = processApiData(sleepData, 'Sleep Score');
         const activityScore = processApiData(activityData, 'Activity Score');
-        const stressScore = processApiData(stressData, 'Stress Score');
 
         setData({
           readiness: readinessScore,
           sleep: sleepScore,
           activity: activityScore,
-          stress: stressScore,
         });
+
+        setReadinessInsights(processInsightsData(readinessInsightsData));
+        setSleepInsights(processInsightsData(sleepInsightsData));
+        setActivityInsights(processInsightsData(activityInsightsData));
+
         setLoading(false);
       })
       .catch(error => {
@@ -211,11 +224,6 @@ export default function Dashboard() {
         setLoading(false);
       });
   }, []);
-
-  const chartData = data?.readiness.days.map((day, index) => ({
-    day,
-    score: data.readiness.scores[index],
-  })) || [];
 
   return (
 <div className="flex min-h-screen w-full flex-col">
@@ -238,14 +246,14 @@ export default function Dashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {chartData.length ? (
+          {data?.readiness.days.length ? (
             <ResponsiveContainer width="100%" height={350}>
               <LineChart
-                data={chartData}
+                data={data?.readiness.days.map((day, index) => ({ name: day, score: data.readiness.scores[index] }))}
                 margin={{ top: 5, right: 20, left: -30, bottom: 5 }}
               >
                 <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
-                <XAxis dataKey="day" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
+                <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
                 <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => value !== 0 ? value : ''} />
                 <Tooltip />
                 <Line type="monotone" dataKey="score" stroke="#0F172A" dot={true} />
@@ -266,15 +274,15 @@ export default function Dashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-  <ul>
-    {metricInsights.readiness.map((insight, index) => (
-      <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
-        <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
-        <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
-      </li>
-    ))}
-  </ul>
-</CardContent>
+              <ul>
+                {readinessInsights.map((insight, index) => (
+                  <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
+                    <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
+                    <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
       </Card>
       <Card x-chunk="dashboard-01-chunk-1">
         <CardHeader className="flex flex-col items-start space-y-2">
@@ -382,63 +390,6 @@ export default function Dashboard() {
   <CardContent>
   <ul>
   {metricInsights.activity.map((insight, index) => (
-    <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
-      <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
-      <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
-    </li>
-  ))}
-</ul>
-  </CardContent>
-</Card>
-<Card x-chunk="dashboard-01-chunk-3">
-  <CardHeader className="flex flex-col items-start space-y-2">
-  <HoverCard>
-    <HoverCardTrigger>
-      <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
-        {data?.stress.metric}
-      </CardTitle>
-    </HoverCardTrigger>
-    <HoverCardContent>
-      <p className="text-sm text-muted-foreground">
-        {metricDefinitions.stress}
-      </p>
-    </HoverCardContent>
-  </HoverCard>
-    <CardDescription className="text-sm text-muted-foreground">
-      Comparison of your stress scores across the week.
-    </CardDescription>
-  </CardHeader>
-  <CardContent>
-    {data?.stress.days.length ? (
-      <ResponsiveContainer width="100%" height={350}>
-        <LineChart
-          data={data.stress.days.map((day, index) => ({ name: day, score: data.stress.scores[index] }))}
-          margin={{ top: 5, right: 20, left: -15, bottom: 5 }}
-        >
-          <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
-          <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
-          <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => value !== 0 ? value : ''} />
-          <Tooltip />
-          <Line type="monotone" dataKey="score" stroke="#0F172A" dot={true} />
-        </LineChart>
-      </ResponsiveContainer>
-    ) : (
-      <p className="text-sm text-muted-foreground">No data available.</p>
-    )}
-  </CardContent>
-</Card>
-<Card x-chunk="dashboard-01-chunk-3-insights">
-  <CardHeader className="flex flex-col items-start space-y-2">
-    <CardTitle className="font-semibold">
-      Stress Insights
-    </CardTitle>
-    <CardDescription className="text-sm text-muted-foreground">
-      Insights based on your stress scores.
-    </CardDescription>
-  </CardHeader>
-  <CardContent>
-  <ul>
-  {metricInsights.stress.map((insight, index) => (
     <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
       <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
       <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>

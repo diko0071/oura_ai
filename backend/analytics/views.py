@@ -275,3 +275,45 @@ def train_model(request):
     update_train_model.train_and_save_models()
     
     return Response({'message': 'Model trained'})
+
+
+@api_view(['GET'])
+def get_generated_insights_for_readiness(request):
+    today = datetime.today().date()
+    data = GeneratedInsights.objects.filter(
+        user=request.user, 
+        metric='daily_readiness_score',
+        created_at__date=today
+    )
+
+    serializer = GeneratedInsightsSerializer(data, many=True)
+
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+def get_generated_insights_for_sleep(request):
+    today = datetime.today().date()
+    data = GeneratedInsights.objects.filter(
+        user=request.user, 
+        metric='daily_sleep_score',
+        created_at__date=today
+    )
+
+    serializer = GeneratedInsightsSerializer(data, many=True)
+
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def get_generated_insights_for_activity(request):
+    today = datetime.today().date()
+    data = GeneratedInsights.objects.filter(
+        user=request.user, 
+        metric='daily_activity_score',
+        created_at__date=today
+    )
+
+    serializer = GeneratedInsightsSerializer(data, many=True)
+
+    return Response(serializer.data)
+
