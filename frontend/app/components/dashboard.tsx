@@ -12,6 +12,8 @@ import {
   Users,
   Activity,
   CircleHelp,
+  MessageSquareShare,
+  BarChartHorizontal,
 } from "lucide-react"
 
 import {
@@ -43,6 +45,7 @@ import {
   ShoppingCart,
   Truck,
   Users2,
+  MessageSquare,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -74,8 +77,18 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-import ApiService from "@/app/services/apiService";
+import { addDays, subDays, isToday, isYesterday, format, isSameDay } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react"
+ 
+import { cn } from "@/lib/utils"
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
+import ApiService from "@/app/services/apiService";
 
 export type MetricScore = {
   days: string[]
@@ -237,78 +250,140 @@ export default function Dashboard() {
       });
   }, []);
 
+  const [date, setDate] = React.useState<Date>(new Date());
+
+  const handlePrevDay = () => setDate(subDays(date, 1));
+  const handleNextDay = () => setDate(addDays(date, 1));
+
+  const getDateLabel = (date: Date) => {
+    if (isToday(date)) return "Today";
+    if (isYesterday(date)) return "Yesterday";
+    return format(date, "PPP");
+  };
+
   return (
 <div className="flex min-h-screen w-full flex-col">
-  <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+  <main className="flex flex-1 flex-col gap-4 p-4 md:gap-4 md:p-8">
+  <div className="flex flex-row items-center justify-end gap-2">
+      <Button variant="outline" onClick={handlePrevDay}>
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant={"outline"}
+            className={cn(
+              "w-[200px] justify-start text-left font-normal", 
+              !date && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {getDateLabel(date)}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0">
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={(selectedDate) => {
+              if (selectedDate) {
+                setDate(selectedDate);
+              }
+            }}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+      <Button variant="outline" onClick={handleNextDay} disabled={isToday(date)}>
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+    </div>
   <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-2">
-      <Card x-chunk="dashboard-01-chunk-0">
-        <CardHeader className="flex flex-col items-start space-y-2">
-          <HoverCard>
-            <HoverCardTrigger>
+  <Card x-chunk="dashboard-01-chunk-0">
+  <CardHeader className="flex flex-col items-start space-y-2">
+    <div className="flex items-start justify-between w-full">
+      <div>
+        <HoverCard>
+          <HoverCardTrigger>
             <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
-                {data?.readiness.metric}
-              </CardTitle>
-            </HoverCardTrigger>
-            <HoverCardContent>
-              <p className="text-sm text-muted-foreground">{metricDefinitions.readiness}</p>
-            </HoverCardContent>
-          </HoverCard>  
-          <CardDescription className="text-sm text-muted-foreground">
-            Readiness scores for the week.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+              {data?.readiness.metric}
+            </CardTitle>
+          </HoverCardTrigger>
+          <HoverCardContent>
+            <p className="text-sm text-muted-foreground">{metricDefinitions.readiness}</p>
+          </HoverCardContent>
+        </HoverCard>
+        <CardDescription className="text-sm text-muted-foreground mt-1">
+          Readiness scores for the week.
+        </CardDescription>
+      </div>
+      <div className="flex space-x-2 self-start">
+        <Button size="icon" variant="outline">
+          <BarChartHorizontal className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  </CardHeader>
+  <CardContent>
           {data?.readiness.days.length ? (
-            <ResponsiveContainer width="100%" height={350}>
-            <LineChart
-              data={data?.readiness.days.map((day, index) => ({ name: day, score: data.readiness.scores[index] }))}
-              margin={{ top: 5, right: 20, left: -30, bottom: 5 }}
-            >
-              <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
-              <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
-              <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => value !== 0 ? value : ''} />
-              <Tooltip />
-              <Line 
-                type="monotone" 
-                dataKey="score" 
-                stroke="#0F172A" 
-                dot={(props) => {
-                  const { cx, cy, index, value } = props;
-                  const isLast = index === data.readiness.scores.length - 1;
-                  return (
-                    <g>
-                      <circle 
-                        cx={cx} 
-                        cy={cy} 
-                        r={isLast ? 12 : 3} 
-                        fill={isLast ? "blue" : "#8BAAF9"} 
-                      />
-                      {isLast && (
-                        <text x={cx} y={cy} textAnchor="middle" fill="white" fontSize="10px" dy=".3em">
-                          {value}
-                        </text>
-                      )}
-                    </g>
-                  );
-                }} 
-              />
-            </LineChart>
-          </ResponsiveContainer>
+    <ResponsiveContainer width="100%" height={350}>
+    <LineChart
+      data={data?.readiness.days.map((day, index) => ({ name: day, score: data.readiness.scores[index] }))}
+      margin={{ top: 5, right: 20, left: -30, bottom: 5 }}
+      >
+        <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
+        <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
+        <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => (value !== 0 ? value : '')} />
+        <Tooltip />
+        <Line
+          type="monotone"
+          dataKey="score"
+          stroke="#0F172A"
+          dot={(props) => {
+            const { cx, cy, index, value } = props;
+            const isSelectedDate = isSameDay(new Date(data.readiness.days[index]), date);
+            return (
+              <g key={`dot-${index}-${value}`}>
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={isSelectedDate ? 12 : 3}
+                  fill={isSelectedDate ? '#4A4741' : '#4A4741'}
+                  style={{ transition: 'r 0.2s ease-in-out, fill 0.2s ease-in-out' }}
+                />
+                {isSelectedDate && (
+                  <text x={cx} y={cy} textAnchor="middle" fill="white" fontSize="10px" dy=".3em">
+                    {value}
+                  </text>
+                )}
+              </g>
+            );
+        }}
+      />
+    </LineChart>
+  </ResponsiveContainer>
           ) : (
             <p className="text-sm text-muted-foreground">No data available.</p>
           )}
         </CardContent>
       </Card>
       <Card x-chunk="dashboard-01-chunk-0-insights">
-        <CardHeader className="flex flex-col items-start space-y-2">
-          <CardTitle className="font-semibold">
-            Readiness Insights
-          </CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">
-            Insights based on your readiness scores.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+  <CardHeader className="flex flex-col items-start space-y-2">
+  <div className="flex items-start justify-between w-full">
+  <div>
+    <CardTitle className="font-semibold">
+      Readiness Insights
+    </CardTitle>
+    <CardDescription className="text-sm text-muted-foreground mt-1">
+      Insights based on your readiness scores.
+    </CardDescription>
+  </div>
+  <Button size="icon" variant="outline" className="self-start">
+    <MessageSquareShare className="h-4 w-4" />
+  </Button>
+</div>
+  </CardHeader>
+  <CardContent>
     <ul>
       {readinessInsights?.generated_insights_text ? (
         readinessInsights.generated_insights_text.split('\n\n').map((insight, index) => (
@@ -322,76 +397,91 @@ export default function Dashboard() {
       )}
     </ul>
   </CardContent>
-      </Card>
-      <Card x-chunk="dashboard-01-chunk-1">
-        <CardHeader className="flex flex-col items-start space-y-2">
-            <HoverCard>
-              <HoverCardTrigger>
-                <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
-                  {data?.sleep.metric}
-                </CardTitle>
-              </HoverCardTrigger>
-              <HoverCardContent>
-                <p className="text-sm text-muted-foreground">
-                  {metricDefinitions.sleep}
-                </p>
-              </HoverCardContent>
-            </HoverCard>
-          <CardDescription className="text-sm text-muted-foreground">
-            Comparison of your sleep scores across the week.
-          </CardDescription>
-        </CardHeader>
+</Card>
+<Card x-chunk="dashboard-01-chunk-1">
+<CardHeader className="flex flex-col items-start space-y-2">
+    <div className="flex items-start justify-between w-full">
+      <div>
+        <HoverCard>
+          <HoverCardTrigger>
+            <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
+              {data?.sleep.metric}
+            </CardTitle>
+          </HoverCardTrigger>
+          <HoverCardContent>
+            <p className="text-sm text-muted-foreground">{metricDefinitions.sleep}</p>
+          </HoverCardContent>
+        </HoverCard>
+        <CardDescription className="text-sm text-muted-foreground mt-1">
+          Sleep scores for the week.
+        </CardDescription>
+      </div>
+      <div className="flex space-x-2 self-start">
+        <Button size="icon" variant="outline">
+          <BarChartHorizontal className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  </CardHeader>
         <CardContent>
           {data?.sleep.days.length ? (
-            <ResponsiveContainer width="100%" height={350}>
-            <LineChart
-              data={data.sleep.days.map((day, index) => ({ name: day, score: data.sleep.scores[index] }))}
-              margin={{ top: 5, right: 20, left: -15, bottom: 5 }}
-            >
-              <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
-              <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
-              <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => value !== 0 ? value : ''} />
-              <Tooltip />
-              <Line 
-                type="monotone" 
-                dataKey="score" 
-                stroke="#0F172A" 
-                dot={(props) => {
-                  const { cx, cy, index, value } = props;
-                  const isLast = index === data.sleep.scores.length - 1;
-                  return (
-                    <g>
-                      <circle 
-                        cx={cx} 
-                        cy={cy} 
-                        r={isLast ? 12 : 3} 
-                        fill={isLast ? "blue" : "#8BAAF9"} 
-                      />
-                      {isLast && (
-                        <text x={cx} y={cy} textAnchor="middle" fill="white" fontSize="10px" dy=".3em">
-                          {value}
-                        </text>
-                      )}
-                    </g>
-                  );
-                }} 
-              />
-            </LineChart>
-          </ResponsiveContainer>
+    <ResponsiveContainer width="100%" height={350}>
+    <LineChart
+      data={data?.sleep.days.map((day, index) => ({ name: day, score: data.sleep.scores[index] }))}
+      margin={{ top: 5, right: 20, left: -30, bottom: 5 }}
+      >
+        <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
+        <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
+        <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => (value !== 0 ? value : '')} />
+        <Tooltip />
+        <Line
+          type="monotone"
+          dataKey="score"
+          stroke="#0F172A"
+          dot={(props) => {
+            const { cx, cy, index, value } = props;
+            const isSelectedDate = isSameDay(new Date(data.sleep.days[index]), date);
+            return (
+              <g key={`dot-${index}-${value}`}>
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={isSelectedDate ? 12 : 3}
+                  fill={isSelectedDate ? '#4A4741' : '#4A4741'}
+                  style={{ transition: 'r 0.2s ease-in-out, fill 0.2s ease-in-out' }}
+                />
+                {isSelectedDate && (
+                  <text x={cx} y={cy} textAnchor="middle" fill="white" fontSize="10px" dy=".3em">
+                    {value}
+                  </text>
+                )}
+              </g>
+            );
+        }}
+      />
+    </LineChart>
+  </ResponsiveContainer>
           ) : (
             <p className="text-sm text-muted-foreground">No data available.</p>
           )}
         </CardContent>
       </Card>
       <Card x-chunk="dashboard-01-chunk-1-insights">
-        <CardHeader className="flex flex-col items-start space-y-2">
-          <CardTitle className="font-semibold">
-            Sleep Insights
-          </CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">
-            Insights based on your sleep scores.
-          </CardDescription>
-        </CardHeader>
+      <CardHeader className="flex flex-col items-start space-y-2">
+  <div className="flex items-start justify-between w-full">
+  <div>
+    <CardTitle className="font-semibold">
+      Sleep Insights
+    </CardTitle>
+    <CardDescription className="text-sm text-muted-foreground mt-1">
+      Insights based on your sleep scores.
+    </CardDescription>
+  </div>
+  <Button size="icon" variant="outline" className="self-start">
+    <MessageSquareShare className="h-4 w-4" />
+  </Button>
+        </div>
+      </CardHeader>
         <CardContent>
     <ul>
       {sleepInsights?.generated_insights_text ? (
@@ -406,77 +496,92 @@ export default function Dashboard() {
       )}
     </ul>
   </CardContent>
-      </Card>
-      <Card x-chunk="dashboard-01-chunk-2">
-  <CardHeader className="flex flex-col items-start space-y-2">
-          <HoverCard>
-            <HoverCardTrigger>
-              <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
-                {data?.activity.metric}
+</Card>
+<Card x-chunk="dashboard-01-chunk-2">
+<CardHeader className="flex flex-col items-start space-y-2">
+    <div className="flex items-start justify-between w-full">
+      <div>
+        <HoverCard>
+          <HoverCardTrigger>
+            <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
+              {data?.activity.metric}
             </CardTitle>
           </HoverCardTrigger>
           <HoverCardContent>
-            <p className="text-sm text-muted-foreground">
-              {metricDefinitions.activity}
-            </p>
+            <p className="text-sm text-muted-foreground">{metricDefinitions.activity}</p>
           </HoverCardContent>
         </HoverCard>
-    <CardDescription className="text-sm text-muted-foreground">
-      Comparison of your activity scores across the week.
-    </CardDescription>
+        <CardDescription className="text-sm text-muted-foreground mt-1">
+          Activity scores for the week.
+        </CardDescription>
+      </div>
+      <div className="flex space-x-2 self-start">
+        <Button size="icon" variant="outline">
+          <BarChartHorizontal className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
   </CardHeader>
-  <CardContent>
-    {data?.activity.days.length ? (
-      <ResponsiveContainer width="100%" height={350}>
-      <LineChart
-        data={data.activity.days.map((day, index) => ({ name: day, score: data.activity.scores[index] }))}
-        margin={{ top: 5, right: 20, left: -15, bottom: 5 }}
+        <CardContent>
+          {data?.activity.days.length ? (
+    <ResponsiveContainer width="100%" height={350}>
+    <LineChart
+      data={data?.activity.days.map((day, index) => ({ name: day, score: data.activity.scores[index] }))}
+      margin={{ top: 5, right: 20, left: -30, bottom: 5 }}
       >
         <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
         <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
-        <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => value !== 0 ? value : ''} />
+        <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => (value !== 0 ? value : '')} />
         <Tooltip />
-        <Line 
-          type="monotone" 
-          dataKey="score" 
-          stroke="#0F172A" 
+        <Line
+          type="monotone"
+          dataKey="score"
+          stroke="#0F172A"
           dot={(props) => {
             const { cx, cy, index, value } = props;
-            const isLast = index === data.activity.scores.length - 1;
+            const isSelectedDate = isSameDay(new Date(data.activity.days[index]), date);
             return (
-              <g>
-                <circle 
-                  cx={cx} 
-                  cy={cy} 
-                  r={isLast ? 12 : 3} 
-                  fill={isLast ? "blue" : "#8BAAF9"} 
+              <g key={`dot-${index}-${value}`}>
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={isSelectedDate ? 12 : 3}
+                  fill={isSelectedDate ? '#4A4741' : '#4A4741'}
+                  style={{ transition: 'r 0.2s ease-in-out, fill 0.2s ease-in-out' }}
                 />
-                {isLast && (
+                {isSelectedDate && (
                   <text x={cx} y={cy} textAnchor="middle" fill="white" fontSize="10px" dy=".3em">
                     {value}
                   </text>
                 )}
               </g>
             );
-          }} 
-        />
-        </LineChart>
-      </ResponsiveContainer>
-    ) : (
-      <p className="text-sm text-muted-foreground">No data available.</p>
-    )}
-  </CardContent>
-</Card>
-<Card x-chunk="dashboard-01-chunk-2-insights">
-  <CardHeader className="flex flex-col items-start space-y-2">
+        }}
+      />
+    </LineChart>
+  </ResponsiveContainer>
+          ) : (
+            <p className="text-sm text-muted-foreground">No data available.</p>
+          )}
+        </CardContent>
+      </Card>
+      <Card x-chunk="dashboard-01-chunk-2-insights">
+      <CardHeader className="flex flex-col items-start space-y-2">
+  <div className="flex items-start justify-between w-full">
+  <div>
     <CardTitle className="font-semibold">
       Activity Insights
     </CardTitle>
-    <CardDescription className="text-sm text-muted-foreground">
+    <CardDescription className="text-sm text-muted-foreground mt-1">
       Insights based on your activity scores.
     </CardDescription>
+  </div>
+  <Button size="icon" variant="outline" className="self-start">
+    <MessageSquareShare className="h-4 w-4" />
+  </Button>
+</div>
   </CardHeader>
-  <CardContent>
+        <CardContent>
     <ul>
       {activityInsights?.generated_insights_text ? (
         activityInsights.generated_insights_text.split('\n\n').map((insight, index) => (
