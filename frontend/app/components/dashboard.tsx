@@ -147,19 +147,26 @@ function generateMockData(): UnifiedData {
   };
 }
 
-function processInsightsData(apiResponse: any): string[] {
-  if (apiResponse && apiResponse.generated_insights_text) {
-    return apiResponse.generated_insights_text.split('\n\n');
-  }
-  return [];
+export type InsightFormat = {
+  generated_insights_text: string
+  metric: string
+}
+
+function processInsightsData(apiResponse: any): InsightFormat {
+  console.log('API Response in processInsightsData:', apiResponse);
+  const insights = apiResponse[0];
+  return {
+    generated_insights_text: insights.generated_insights_text,
+    metric: insights.metric,
+  };
 }
 
 export default function Dashboard() {
   const [loading, setLoading] = useState<boolean>(false);
   const [data, setData] = useState<UnifiedData | null>(null);
-  const [readinessInsights, setReadinessInsights] = useState<string[]>([]);
-  const [sleepInsights, setSleepInsights] = useState<string[]>([]);
-  const [activityInsights, setActivityInsights] = useState<string[]>([]);
+  const [readinessInsights, setReadinessInsights] = useState<InsightFormat | null>(null);
+  const [sleepInsights, setSleepInsights] = useState<InsightFormat | null>(null);
+  const [activityInsights, setActivityInsights] = useState<InsightFormat | null>(null);
 
   const wrapSecondaryMetrics = (text: string) => {
     const metrics = ["HRV", "Sleep Score", "No Activity Score", "Sleep Latency", "Stress Level", "Activity Level", "Sleep Quality"];
@@ -198,23 +205,28 @@ export default function Dashboard() {
     const fetchReadinessInsights = ApiService.get('/api/oura/get_generated_insights_for_readiness/');
     const fetchSleepInsights = ApiService.get('/api/oura/get_generated_insights_for_sleep/');
     const fetchActivityInsights = ApiService.get('/api/oura/get_generated_insights_for_activity/');
-
+  
     Promise.all([fetchReadiness, fetchSleep, fetchActivity, fetchReadinessInsights, fetchSleepInsights, fetchActivityInsights])
       .then(([readinessData, sleepData, activityData, readinessInsightsData, sleepInsightsData, activityInsightsData]) => {
+  
         const readinessScore = processApiData(readinessData, 'Readiness Score');
         const sleepScore = processApiData(sleepData, 'Sleep Score');
         const activityScore = processApiData(activityData, 'Activity Score');
-
+  
         setData({
           readiness: readinessScore,
           sleep: sleepScore,
           activity: activityScore,
         });
-
-        setReadinessInsights(processInsightsData(readinessInsightsData));
-        setSleepInsights(processInsightsData(sleepInsightsData));
-        setActivityInsights(processInsightsData(activityInsightsData));
-
+  
+        const readinessInsightsProcessed = processInsightsData(readinessInsightsData);
+        const sleepInsightsProcessed = processInsightsData(sleepInsightsData);
+        const activityInsightsProcessed = processInsightsData(activityInsightsData);
+  
+        setReadinessInsights(readinessInsightsProcessed);
+        setSleepInsights(sleepInsightsProcessed);
+        setActivityInsights(activityInsightsProcessed);
+  
         setLoading(false);
       })
       .catch(error => {
@@ -248,17 +260,40 @@ export default function Dashboard() {
         <CardContent>
           {data?.readiness.days.length ? (
             <ResponsiveContainer width="100%" height={350}>
-              <LineChart
-                data={data?.readiness.days.map((day, index) => ({ name: day, score: data.readiness.scores[index] }))}
-                margin={{ top: 5, right: 20, left: -30, bottom: 5 }}
-              >
-                <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
-                <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
-                <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => value !== 0 ? value : ''} />
-                <Tooltip />
-                <Line type="monotone" dataKey="score" stroke="#0F172A" dot={true} />
-              </LineChart>
-            </ResponsiveContainer>
+            <LineChart
+              data={data?.readiness.days.map((day, index) => ({ name: day, score: data.readiness.scores[index] }))}
+              margin={{ top: 5, right: 20, left: -30, bottom: 5 }}
+            >
+              <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
+              <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
+              <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => value !== 0 ? value : ''} />
+              <Tooltip />
+              <Line 
+                type="monotone" 
+                dataKey="score" 
+                stroke="#0F172A" 
+                dot={(props) => {
+                  const { cx, cy, index, value } = props;
+                  const isLast = index === data.readiness.scores.length - 1;
+                  return (
+                    <g>
+                      <circle 
+                        cx={cx} 
+                        cy={cy} 
+                        r={isLast ? 12 : 3} 
+                        fill={isLast ? "blue" : "#8BAAF9"} 
+                      />
+                      {isLast && (
+                        <text x={cx} y={cy} textAnchor="middle" fill="white" fontSize="10px" dy=".3em">
+                          {value}
+                        </text>
+                      )}
+                    </g>
+                  );
+                }} 
+              />
+            </LineChart>
+          </ResponsiveContainer>
           ) : (
             <p className="text-sm text-muted-foreground">No data available.</p>
           )}
@@ -274,15 +309,19 @@ export default function Dashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-              <ul>
-                {readinessInsights.map((insight, index) => (
-                  <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
-                    <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
-                    <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
+    <ul>
+      {readinessInsights?.generated_insights_text ? (
+        readinessInsights.generated_insights_text.split('\n\n').map((insight, index) => (
+          <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
+            <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
+            <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
+          </li>
+        ))
+      ) : (
+        <p className="text-sm text-muted-foreground">No insights available.</p>
+      )}
+    </ul>
+  </CardContent>
       </Card>
       <Card x-chunk="dashboard-01-chunk-1">
         <CardHeader className="flex flex-col items-start space-y-2">
@@ -305,17 +344,40 @@ export default function Dashboard() {
         <CardContent>
           {data?.sleep.days.length ? (
             <ResponsiveContainer width="100%" height={350}>
-              <LineChart
-                data={data.sleep.days.map((day, index) => ({ name: day, score: data.sleep.scores[index] }))}
-                margin={{ top: 5, right: 20, left: -15, bottom: 5 }}
-              >
-                <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
-                <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
-                <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => value !== 0 ? value : ''} />
-                <Tooltip />
-                <Line type="monotone" dataKey="score" stroke="#0F172A" dot={true} />
-              </LineChart>
-            </ResponsiveContainer>
+            <LineChart
+              data={data.sleep.days.map((day, index) => ({ name: day, score: data.sleep.scores[index] }))}
+              margin={{ top: 5, right: 20, left: -15, bottom: 5 }}
+            >
+              <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
+              <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
+              <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => value !== 0 ? value : ''} />
+              <Tooltip />
+              <Line 
+                type="monotone" 
+                dataKey="score" 
+                stroke="#0F172A" 
+                dot={(props) => {
+                  const { cx, cy, index, value } = props;
+                  const isLast = index === data.sleep.scores.length - 1;
+                  return (
+                    <g>
+                      <circle 
+                        cx={cx} 
+                        cy={cy} 
+                        r={isLast ? 12 : 3} 
+                        fill={isLast ? "blue" : "#8BAAF9"} 
+                      />
+                      {isLast && (
+                        <text x={cx} y={cy} textAnchor="middle" fill="white" fontSize="10px" dy=".3em">
+                          {value}
+                        </text>
+                      )}
+                    </g>
+                  );
+                }} 
+              />
+            </LineChart>
+          </ResponsiveContainer>
           ) : (
             <p className="text-sm text-muted-foreground">No data available.</p>
           )}
@@ -331,15 +393,19 @@ export default function Dashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ul>
-            {metricInsights.sleep.map((insight, index) => (
-              <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
-                <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
-                <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
+    <ul>
+      {sleepInsights?.generated_insights_text ? (
+        sleepInsights.generated_insights_text.split('\n\n').map((insight, index) => (
+          <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
+            <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
+            <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
+          </li>
+        ))
+      ) : (
+        <p className="text-sm text-muted-foreground">No insights available.</p>
+      )}
+    </ul>
+  </CardContent>
       </Card>
       <Card x-chunk="dashboard-01-chunk-2">
   <CardHeader className="flex flex-col items-start space-y-2">
@@ -362,15 +428,38 @@ export default function Dashboard() {
   <CardContent>
     {data?.activity.days.length ? (
       <ResponsiveContainer width="100%" height={350}>
-        <LineChart
-          data={data.activity.days.map((day, index) => ({ name: day, score: data.activity.scores[index] }))}
-          margin={{ top: 5, right: 20, left: -15, bottom: 5 }}
-        >
-          <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
-          <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
-          <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => value !== 0 ? value : ''} />
-          <Tooltip />
-          <Line type="monotone" dataKey="score" stroke="#0F172A" dot={true} />
+      <LineChart
+        data={data.activity.days.map((day, index) => ({ name: day, score: data.activity.scores[index] }))}
+        margin={{ top: 5, right: 20, left: -15, bottom: 5 }}
+      >
+        <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
+        <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
+        <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => value !== 0 ? value : ''} />
+        <Tooltip />
+        <Line 
+          type="monotone" 
+          dataKey="score" 
+          stroke="#0F172A" 
+          dot={(props) => {
+            const { cx, cy, index, value } = props;
+            const isLast = index === data.activity.scores.length - 1;
+            return (
+              <g>
+                <circle 
+                  cx={cx} 
+                  cy={cy} 
+                  r={isLast ? 12 : 3} 
+                  fill={isLast ? "blue" : "#8BAAF9"} 
+                />
+                {isLast && (
+                  <text x={cx} y={cy} textAnchor="middle" fill="white" fontSize="10px" dy=".3em">
+                    {value}
+                  </text>
+                )}
+              </g>
+            );
+          }} 
+        />
         </LineChart>
       </ResponsiveContainer>
     ) : (
@@ -388,14 +477,18 @@ export default function Dashboard() {
     </CardDescription>
   </CardHeader>
   <CardContent>
-  <ul>
-  {metricInsights.activity.map((insight, index) => (
-    <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
-      <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
-      <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
-    </li>
-  ))}
-</ul>
+    <ul>
+      {activityInsights?.generated_insights_text ? (
+        activityInsights.generated_insights_text.split('\n\n').map((insight, index) => (
+          <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
+            <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
+            <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
+          </li>
+        ))
+      ) : (
+        <p className="text-sm text-muted-foreground">No insights available.</p>
+      )}
+    </ul>
   </CardContent>
 </Card>
         </div>
