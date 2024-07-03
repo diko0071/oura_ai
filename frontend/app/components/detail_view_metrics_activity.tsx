@@ -3,33 +3,6 @@ import Link from "next/link"
 import React, { useState, useEffect } from 'react';
 import ApiService from "@/app/services/apiService";
 
-type SleepMetrics = {
-    day: string;
-    score: number;
-    deep_sleep: number;
-    efficiency: number;
-    latency: number;
-    rem_sleep: number;
-    restfulness: number;
-    timing: number;
-    total_sleep: number;
-}
-
-type ReadinessMetrics = {
-    day: string;
-    score: number;
-    temperature_deviation: number;
-    temperature_trend_deviation: number;
-    activity_balance: number;
-    body_temperature: number;
-    hrv_balance: number;
-    previous_day_activity: number;
-    previous_night: number;
-    recovery_index: number;
-    resting_heart_rate: number;
-    sleep_balance: number;
-}
-
 type ActivityMetrics = {
     day: string;
     score: number;
@@ -49,7 +22,7 @@ type ActivityMetrics = {
     stay_active: number;
 }
 
-function ProcessApiData(apiResponse: any, day: string, metric: string): SleepMetrics | ReadinessMetrics | ActivityMetrics {
+function ProcessApiData(apiResponse: any, day: string, metric: string): ActivityMetrics {
     return {
         day: day,
         score: apiResponse.score,
@@ -58,8 +31,6 @@ function ProcessApiData(apiResponse: any, day: string, metric: string): SleepMet
 }
 
 export default function DetailViewMetrics() {
-
-
 
     return (
         <div>
