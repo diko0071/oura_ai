@@ -68,6 +68,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -165,7 +167,10 @@ export type InsightFormat = {
   metric: string
 }
 
-function processInsightsData(apiResponse: any): InsightFormat {
+function processInsightsData(apiResponse: any): InsightFormat | null {
+  if (!apiResponse || apiResponse.length === 0 || !apiResponse[0].generated_insights_text) {
+    return null;
+  }
   console.log('API Response in processInsightsData:', apiResponse);
   const insights = apiResponse[0];
   return {
@@ -180,6 +185,7 @@ export default function Dashboard() {
   const [readinessInsights, setReadinessInsights] = useState<InsightFormat | null>(null);
   const [sleepInsights, setSleepInsights] = useState<InsightFormat | null>(null);
   const [activityInsights, setActivityInsights] = useState<InsightFormat | null>(null);
+  const [insightsLoading, setInsightsLoading] = useState<boolean>(false);
 
   const wrapSecondaryMetrics = (text: string) => {
     const metrics = ["HRV", "Sleep Score", "No Activity Score", "Sleep Latency", "Stress Level", "Activity Level", "Sleep Quality"];
@@ -210,17 +216,16 @@ export default function Dashboard() {
     });
   };
 
+  const [date, setDate] = React.useState<Date>(new Date());
+
   React.useEffect(() => {
     setLoading(true);
     const fetchReadiness = ApiService.get('/api/oura/daily_readiness/');
     const fetchSleep = ApiService.get('/api/oura/daily_sleep/');
     const fetchActivity = ApiService.get('/api/oura/daily_activity/');
-    const fetchReadinessInsights = ApiService.get('/api/oura/get_generated_insights_for_readiness/');
-    const fetchSleepInsights = ApiService.get('/api/oura/get_generated_insights_for_sleep/');
-    const fetchActivityInsights = ApiService.get('/api/oura/get_generated_insights_for_activity/');
   
-    Promise.all([fetchReadiness, fetchSleep, fetchActivity, fetchReadinessInsights, fetchSleepInsights, fetchActivityInsights])
-      .then(([readinessData, sleepData, activityData, readinessInsightsData, sleepInsightsData, activityInsightsData]) => {
+    Promise.all([fetchReadiness, fetchSleep, fetchActivity])
+      .then(([readinessData, sleepData, activityData]) => {
   
         const readinessScore = processApiData(readinessData, 'Readiness Score');
         const sleepScore = processApiData(sleepData, 'Sleep Score');
@@ -232,14 +237,6 @@ export default function Dashboard() {
           activity: activityScore,
         });
   
-        const readinessInsightsProcessed = processInsightsData(readinessInsightsData);
-        const sleepInsightsProcessed = processInsightsData(sleepInsightsData);
-        const activityInsightsProcessed = processInsightsData(activityInsightsData);
-  
-        setReadinessInsights(readinessInsightsProcessed);
-        setSleepInsights(sleepInsightsProcessed);
-        setActivityInsights(activityInsightsProcessed);
-  
         setLoading(false);
       })
       .catch(error => {
@@ -250,7 +247,32 @@ export default function Dashboard() {
       });
   }, []);
 
-  const [date, setDate] = React.useState<Date>(new Date());
+  React.useEffect(() => {
+    setInsightsLoading(true);
+    const formattedDate = date.toISOString().split('T')[0];
+
+    const fetchReadinessInsights = ApiService.getWithParam('/api/oura/get_generated_insights_for_readiness/', `date=${formattedDate}`);
+    const fetchSleepInsights = ApiService.getWithParam('/api/oura/get_generated_insights_for_sleep/', `date=${formattedDate}`);
+    const fetchActivityInsights = ApiService.getWithParam('/api/oura/get_generated_insights_for_activity/', `date=${formattedDate}`);
+  
+    Promise.all([fetchReadinessInsights, fetchSleepInsights, fetchActivityInsights])
+      .then(([readinessInsightsData, sleepInsightsData, activityInsightsData]) => {
+  
+        const readinessInsightsProcessed = processInsightsData(readinessInsightsData);
+        const sleepInsightsProcessed = processInsightsData(sleepInsightsData);
+        const activityInsightsProcessed = processInsightsData(activityInsightsData);
+  
+        setReadinessInsights(readinessInsightsProcessed);
+        setSleepInsights(sleepInsightsProcessed);
+        setActivityInsights(activityInsightsProcessed);
+  
+        setInsightsLoading(false);
+      })
+      .catch(error => {
+        console.error('Failed to fetch insights:', error);
+        setInsightsLoading(false);
+      });
+  }, [date]);
 
   const handlePrevDay = () => setDate(subDays(date, 1));
   const handleNextDay = () => setDate(addDays(date, 1));
@@ -384,18 +406,26 @@ export default function Dashboard() {
 </div>
   </CardHeader>
   <CardContent>
-    <ul>
-      {readinessInsights?.generated_insights_text ? (
-        readinessInsights.generated_insights_text.split('\n\n').map((insight, index) => (
-          <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
-            <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
-            <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
-          </li>
-        ))
-      ) : (
-        <p className="text-sm text-muted-foreground">No insights available.</p>
-      )}
-    </ul>
+    {insightsLoading ? (
+      <div className="space-y-2">
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-5/6" />
+        <Skeleton className="h-4 w-3/4" />
+      </div>
+    ) : (
+      <ul>
+        {readinessInsights?.generated_insights_text ? (
+          readinessInsights.generated_insights_text.split('\n\n').map((insight, index) => (
+            <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
+              <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
+              <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
+            </li>
+          ))
+        ) : (
+          <p className="text-sm text-muted-foreground">No insights available for {date.toISOString().split('T')[0]}.</p>
+        )}
+      </ul>
+    )}
   </CardContent>
 </Card>
 <Card x-chunk="dashboard-01-chunk-1">
@@ -482,19 +512,27 @@ export default function Dashboard() {
   </Button>
         </div>
       </CardHeader>
-        <CardContent>
-    <ul>
-      {sleepInsights?.generated_insights_text ? (
-        sleepInsights.generated_insights_text.split('\n\n').map((insight, index) => (
-          <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
-            <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
-            <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
-          </li>
-        ))
-      ) : (
-        <p className="text-sm text-muted-foreground">No insights available.</p>
-      )}
-    </ul>
+      <CardContent>
+    {insightsLoading ? (
+      <div className="space-y-2">
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-5/6" />
+        <Skeleton className="h-4 w-3/4" />
+      </div>
+    ) : (
+      <ul>
+        {sleepInsights?.generated_insights_text ? (
+          sleepInsights.generated_insights_text.split('\n\n').map((insight, index) => (
+            <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
+              <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
+              <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
+            </li>
+          ))
+        ) : (
+          <p className="text-sm text-muted-foreground">No insights available for {date.toISOString().split('T')[0]}.</p>
+        )}
+      </ul>
+    )}
   </CardContent>
 </Card>
 <Card x-chunk="dashboard-01-chunk-2">
@@ -581,19 +619,27 @@ export default function Dashboard() {
   </Button>
 </div>
   </CardHeader>
-        <CardContent>
-    <ul>
-      {activityInsights?.generated_insights_text ? (
-        activityInsights.generated_insights_text.split('\n\n').map((insight, index) => (
-          <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
-            <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
-            <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
-          </li>
-        ))
-      ) : (
-        <p className="text-sm text-muted-foreground">No insights available.</p>
-      )}
-    </ul>
+  <CardContent>
+    {insightsLoading ? (
+      <div className="space-y-2">
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-5/6" />
+        <Skeleton className="h-4 w-3/4" />
+      </div>
+    ) : (
+      <ul>
+        {activityInsights?.generated_insights_text ? (
+          activityInsights.generated_insights_text.split('\n\n').map((insight, index) => (
+            <li key={index} className="text-sm text-muted-foreground mb-2 flex items-start">
+              <Activity className="mr-2 mt-1 flex-shrink-0 align-middle" size={13} />
+              <span className="flex-1 align-middle">{wrapSecondaryMetrics(insight)}</span>
+            </li>
+          ))
+        ) : (
+          <p className="text-sm text-muted-foreground">No insights available for {date.toISOString().split('T')[0]}.</p>
+        )}
+      </ul>
+    )}
   </CardContent>
 </Card>
         </div>

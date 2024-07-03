@@ -279,11 +279,11 @@ def train_model(request):
 
 @api_view(['GET'])
 def get_generated_insights_for_readiness(request):
-    today = datetime.today().date()
+    date = request.query_params.get('date')
     data = GeneratedInsights.objects.filter(
         user=request.user, 
         metric='daily_readiness_score',
-        created_at__date=today
+        created_at__date=date
     )
 
     serializer = GeneratedInsightsSerializer(data, many=True)
@@ -293,11 +293,11 @@ def get_generated_insights_for_readiness(request):
 
 @api_view(['GET'])
 def get_generated_insights_for_sleep(request):
-    today = datetime.today().date()
+    date = request.query_params.get('date')
     data = GeneratedInsights.objects.filter(
         user=request.user, 
         metric='daily_sleep_score',
-        created_at__date=today
+        created_at__date=date
     )
 
     serializer = GeneratedInsightsSerializer(data, many=True)
@@ -306,11 +306,11 @@ def get_generated_insights_for_sleep(request):
 
 @api_view(['GET'])
 def get_generated_insights_for_activity(request):
-    today = datetime.today().date()
+    date = request.query_params.get('date')
     data = GeneratedInsights.objects.filter(
         user=request.user, 
         metric='daily_activity_score',
-        created_at__date=today
+        created_at__date=date
     )
 
     serializer = GeneratedInsightsSerializer(data, many=True)
