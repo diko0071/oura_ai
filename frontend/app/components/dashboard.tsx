@@ -220,9 +220,9 @@ export default function Dashboard() {
 
   React.useEffect(() => {
     setLoading(true);
-    const fetchReadiness = ApiService.get('/api/oura/daily_readiness/');
-    const fetchSleep = ApiService.get('/api/oura/daily_sleep/');
-    const fetchActivity = ApiService.get('/api/oura/daily_activity/');
+    const fetchReadiness = ApiService.get('/api/oura/daily_readiness_score_for_week/');
+    const fetchSleep = ApiService.get('/api/oura/daily_sleep_score_for_week/');
+    const fetchActivity = ApiService.get('/api/oura/daily_activity_score_for_week/');
   
     Promise.all([fetchReadiness, fetchSleep, fetchActivity])
       .then(([readinessData, sleepData, activityData]) => {
@@ -251,9 +251,9 @@ export default function Dashboard() {
     setInsightsLoading(true);
     const formattedDate = date.toISOString().split('T')[0];
 
-    const fetchReadinessInsights = ApiService.getWithParam('/api/oura/get_generated_insights_for_readiness/', `date=${formattedDate}`);
-    const fetchSleepInsights = ApiService.getWithParam('/api/oura/get_generated_insights_for_sleep/', `date=${formattedDate}`);
-    const fetchActivityInsights = ApiService.getWithParam('/api/oura/get_generated_insights_for_activity/', `date=${formattedDate}`);
+    const fetchReadinessInsights = ApiService.getWithParam('/api/oura/get_generated_insights_for_readiness_for_day/', `date=${formattedDate}`);
+    const fetchSleepInsights = ApiService.getWithParam('/api/oura/get_generated_insights_for_sleep_for_day/', `date=${formattedDate}`);
+    const fetchActivityInsights = ApiService.getWithParam('/api/oura/get_generated_insights_for_activity_for_day/', `date=${formattedDate}`);
   
     Promise.all([fetchReadinessInsights, fetchSleepInsights, fetchActivityInsights])
       .then(([readinessInsightsData, sleepInsightsData, activityInsightsData]) => {

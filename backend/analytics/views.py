@@ -137,7 +137,6 @@ def get_activity_data(start_date, end_date):
     
     return rows
 
-
 def get_heart_data(start_date, end_date):
 
     api = 'heartrate'
@@ -168,7 +167,53 @@ def get_heart_data(start_date, end_date):
     return rows
 
 @api_view(['GET'])
-def oura_daily_readiness(request):
+def oura_daily_activity_row_for_day(request):
+    date = request.query_params.get('date')
+
+    end_date = datetime.strptime(date, '%Y-%m-%d')
+    
+    start_date = end_date - timedelta(days=1)
+
+    activity_data = get_activity_data(start_date, end_date)
+
+    if not activity_data:
+        return Response({'error': 'No data available for the specified date'}, status=404)
+
+    return Response(activity_data)
+
+@api_view(['GET'])
+def oura_daily_sleep_row_for_day(request):
+    date = request.query_params.get('date')
+
+    end_date = date
+    
+    start_date = date
+
+    sleep_data = get_sleep_data(start_date, end_date)
+
+    if not sleep_data:
+        return Response({'error': 'No data available for the specified date'}, status=404)
+
+    return Response(sleep_data)
+
+
+@api_view(['GET'])
+def oura_daily_readiness_row_for_day(request):
+    date = request.query_params.get('date')
+
+    end_date = date
+    
+    start_date = date
+
+    readiness_data = get_readiness_data(start_date, end_date)
+
+    if not readiness_data:
+        return Response({'error': 'No data available for the specified date'}, status=404)
+
+    return Response(readiness_data)
+
+@api_view(['GET'])
+def oura_daily_readiness_score_for_week(request):
     end_date = datetime.today().strftime('%Y-%m-%d')
     start_date = (datetime.today() - timedelta(days=7)).strftime('%Y-%m-%d')
 
@@ -184,7 +229,7 @@ def oura_daily_readiness(request):
 
 
 @api_view(['GET'])
-def oura_daily_sleep(request):
+def oura_daily_sleep_score_for_week(request):
     end_date = datetime.today().strftime('%Y-%m-%d')
     start_date = (datetime.today() - timedelta(days=7)).strftime('%Y-%m-%d')
 
@@ -200,7 +245,7 @@ def oura_daily_sleep(request):
     return Response(transformed_data)
 
 @api_view(['GET'])
-def oura_daily_activity(request):
+def oura_daily_activity_score_for_week(request):
     end_date = datetime.today().strftime('%Y-%m-%d')
     start_date = (datetime.today() - timedelta(days=7)).strftime('%Y-%m-%d')
 
@@ -215,22 +260,6 @@ def oura_daily_activity(request):
 
     return Response(transformed_data)
 
-
-@api_view(['GET'])
-def oura_daily_stress(request):
-    end_date = datetime.today().strftime('%Y-%m-%d')
-    start_date = (datetime.today() - timedelta(days=7)).strftime('%Y-%m-%d')
-
-    stress_data = get_stress_data(start_date, end_date)
-
-    transformed_data = {
-        'days': [item['day'] for item in stress_data],
-        'scores': [item['score'] for item in stress_data],
-        'metric': 'Daily Stress Score'
-    }
-
-    return Response(transformed_data)
-
 @api_view(['GET'])
 def oura_heartrate(request):
     start_date = '2022-01-01'
@@ -241,7 +270,7 @@ def oura_heartrate(request):
     return Response(sleep_data)
 
 @api_view(['GET'])
-def get_insights_for_metric(request):
+def generate_insights_for_metric(request):
 
     api = request.data.get('api')
 
@@ -278,7 +307,7 @@ def train_model(request):
 
 
 @api_view(['GET'])
-def get_generated_insights_for_readiness(request):
+def get_generated_insights_for_readiness_for_day(request):
     date = request.query_params.get('date')
     data = GeneratedInsights.objects.filter(
         user=request.user, 
@@ -292,7 +321,7 @@ def get_generated_insights_for_readiness(request):
 
 
 @api_view(['GET'])
-def get_generated_insights_for_sleep(request):
+def get_generated_insights_for_sleep_for_day(request):
     date = request.query_params.get('date')
     data = GeneratedInsights.objects.filter(
         user=request.user, 
@@ -305,7 +334,7 @@ def get_generated_insights_for_sleep(request):
     return Response(serializer.data)
 
 @api_view(['GET'])
-def get_generated_insights_for_activity(request):
+def get_generated_insights_for_activity_for_day(request):
     date = request.query_params.get('date')
     data = GeneratedInsights.objects.filter(
         user=request.user, 
