@@ -161,7 +161,8 @@ export default function DetailViewMetrics({ day }: DetailViewMetricsProps) {
     return (
         <div className="flex min-h-screen w-full flex-col">
   <main className="flex flex-1 flex-col gap-4 p-4 md:gap-4 md:p-8">
-  <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-1">
+    <h1 className="text-2xl font-bold">Details for sleep for {day}</h1>
+  <div className="grid gap-4 md:grid-cols-1 md:gap-8 lg:grid-cols-1">
 <Card x-chunk="dashboard-01-chunk-0">
   <CardHeader className="flex flex-col items-start space-y-2">
     <div className="flex items-start justify-between w-full">
@@ -169,7 +170,7 @@ export default function DetailViewMetrics({ day }: DetailViewMetricsProps) {
         <HoverCard>
           <HoverCardTrigger>
             <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
-              Sleep Score
+              Total Sleep
             </CardTitle>
           </HoverCardTrigger>
           <HoverCardContent>
@@ -183,7 +184,7 @@ export default function DetailViewMetrics({ day }: DetailViewMetricsProps) {
           {metrics?.days.length ? (
                 <ResponsiveContainer width="100%" height={350}>
                 <LineChart
-                  data={metrics?.days.map((day, index) => ({ name: day, score: metrics.scores[index] }))}
+                  data={metrics?.days.map((day, index) => ({ name: day, total_sleep: metrics.total_sleep[index] }))}
                   margin={{ top: 5, right: 20, left: -30, bottom: 5 }}
                 >
                   <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
@@ -192,7 +193,7 @@ export default function DetailViewMetrics({ day }: DetailViewMetricsProps) {
                   <Tooltip />
                   <Line
                     type="monotone"
-                    dataKey="score"
+                    dataKey="total_sleep"
                     stroke="#0F172A"
                     dot={(props) => {
                       const { cx, cy, index, value } = props;
@@ -230,7 +231,7 @@ export default function DetailViewMetrics({ day }: DetailViewMetricsProps) {
         <HoverCard>
           <HoverCardTrigger>
             <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
-              Deep Sleep
+              Sleep Latency
             </CardTitle>
           </HoverCardTrigger>
           <HoverCardContent>
@@ -244,7 +245,7 @@ export default function DetailViewMetrics({ day }: DetailViewMetricsProps) {
           {metrics?.days.length ? (
     <ResponsiveContainer width="100%" height={350}>
     <LineChart
-      data={metrics?.days.map((day, index) => ({ name: day, deep_sleep: metrics.deep_sleep[index] }))}
+      data={metrics?.days.map((day, index) => ({ name: day, latency: metrics.latency[index] }))}
       margin={{ top: 5, right: 20, left: -30, bottom: 5 }}
       >
         <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
@@ -253,7 +254,7 @@ export default function DetailViewMetrics({ day }: DetailViewMetricsProps) {
         <Tooltip />
         <Line
           type="monotone"
-          dataKey="deep_sleep"
+          dataKey="latency"
           stroke="#0F172A"
           dot={(props) => {
             const { cx, cy, index, value } = props;
@@ -292,7 +293,7 @@ export default function DetailViewMetrics({ day }: DetailViewMetricsProps) {
                         <HoverCard>
                             <HoverCardTrigger>
                                 <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
-                                    Restfulness and Efficiency of Sleep
+                                    Restfulness and Efficiency
                                 </CardTitle>
                             </HoverCardTrigger>
                             <HoverCardContent>
@@ -348,6 +349,91 @@ export default function DetailViewMetrics({ day }: DetailViewMetricsProps) {
                                 const isSelectedDate = isSameDay(new Date(metrics.days[index]), new Date(day));
                                 return (
                                     <g key={`dot-restfulness-${index}-${value}`}>
+                                        <circle
+                                            cx={cx}
+                                            cy={cy}
+                                            r={isSelectedDate ? 12 : 3}
+                                            fill={isSelectedDate ? '#4A47' : '#4A47'}
+                                            style={{ transition: 'r 0.2s ease-in-out, fill 0.2s ease-in-out' }}
+                                        />
+                                        {isSelectedDate && (
+                                            <text x={cx} y={cy} textAnchor="middle" fill="white" fontSize="10px" dy=".3em">
+                                                {value}
+                                            </text>
+                                        )}
+                                    </g>
+                                );
+                            }} />
+                        </LineChart>
+                    </ResponsiveContainer>
+                ) : (
+                    <p className="text-sm text-muted-foreground">No data available.</p>
+                )}
+            </CardContent>
+        </Card>
+        <Card x-chunk="dashboard-01-chunk-2">
+            <CardHeader className="flex flex-col items-start space-y-2">
+                <div className="flex items-start justify-between w-full">
+                    <div>
+                        <HoverCard>
+                            <HoverCardTrigger>
+                                <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
+                                    Deep and REM 
+                                </CardTitle>
+                            </HoverCardTrigger>
+                            <HoverCardContent>
+                                <p className="text-sm text-muted-foreground">{}</p>
+                            </HoverCardContent>
+                        </HoverCard>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent>
+                {metrics?.days.length ? (
+                    <ResponsiveContainer width="100%" height={350}>
+                        <LineChart
+                            data={metrics?.days.map((day, index) => ({
+                                name: day,
+                                deep_sleep: metrics.deep_sleep[index],
+                                rem_sleep: metrics.rem_sleep[index]
+                            }))}
+                            margin={{ top: 5, right: 20, left: -30, bottom: 5 }}
+                        >
+                            <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
+                            <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
+                            <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => (value !== 0 ? value : '')} />
+                            <Tooltip />
+                            <Legend 
+                                wrapperStyle={{ 
+                                    textAlign: 'center', 
+                                    fontSize: '0.6rem' 
+                                }} 
+                            /> 
+                            <Line type="monotone" dataKey="deep_sleep" stroke="#4A4741" dot={(props) => {
+                                const { cx, cy, index, value } = props;
+                                const isSelectedDate = isSameDay(new Date(metrics.days[index]), new Date(day));
+                                return (
+                                    <g key={`dot-deep_sleep-${index}-${value}`}>
+                                        <circle
+                                            cx={cx}
+                                            cy={cy}
+                                            r={isSelectedDate ? 12 : 3}
+                                            fill={isSelectedDate ? '#4A4741' : '#4A4741'}
+                                            style={{ transition: 'r 0.2s ease-in-out, fill 0.2s ease-in-out' }}
+                                        />
+                                        {isSelectedDate && (
+                                            <text x={cx} y={cy} textAnchor="middle" fill="white" fontSize="10px" dy=".3em">
+                                                {value}
+                                            </text>
+                                        )}
+                                    </g>
+                                );
+                            }} />
+                            <Line type="monotone" dataKey="rem_sleep" stroke="#4A47" dot={(props) => {
+                                const { cx, cy, index, value } = props;
+                                const isSelectedDate = isSameDay(new Date(metrics.days[index]), new Date(day));
+                                return (
+                                    <g key={`dot-rem_sleep-${index}-${value}`}>
                                         <circle
                                             cx={cx}
                                             cy={cy}

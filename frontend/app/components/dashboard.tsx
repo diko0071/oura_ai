@@ -92,7 +92,9 @@ import {
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 
-import DetailViewMetrics from "./detail_view_metrics_sleep";
+import DetailViewSleepMetrics from "./detail_view_metrics_sleep";
+import DetailViewReadinessMetrics from "./detail_view_metrics_readiness";
+import DetailViewActivityMetrics from "./detail_view_metrics_activity";
 
 import ApiService from "@/app/services/apiService";
 
@@ -184,7 +186,9 @@ function processInsightsData(apiResponse: any): InsightFormat | null {
 }
 
 export default function Dashboard() {
-  const [showDetailView, setShowDetailView] = useState<boolean>(false);
+  const [showDetailViewSleep, setShowDetailViewSleep] = useState<boolean>(false);
+  const [showDetailViewReadiness, setShowDetailViewReadiness] = useState<boolean>(false);
+  const [showDetailViewActivity, setShowDetailViewActivity] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [data, setData] = useState<UnifiedData | null>(null);
   const [readinessInsights, setReadinessInsights] = useState<InsightFormat | null>(null);
@@ -392,7 +396,7 @@ export default function Dashboard() {
         </CardDescription>
       </div>
       <div className="flex space-x-2 self-start">
-        <Button size="icon" variant="outline" onClick={() => setShowDetailView(true)}>
+      <Button size="icon" variant="outline" onClick={() => setShowDetailViewReadiness(prev => !prev)}>
           <BarChartHorizontal className="h-4 w-4" />
         </Button>
       </div>
@@ -499,7 +503,7 @@ export default function Dashboard() {
         </CardDescription>
       </div>
       <div className="flex space-x-2 self-start">
-        <Button size="icon" variant="outline">
+      <Button size="icon" variant="outline" onClick={() => setShowDetailViewSleep(prev => !prev)}>
           <BarChartHorizontal className="h-4 w-4" />
         </Button>
       </div>
@@ -606,7 +610,7 @@ export default function Dashboard() {
         </CardDescription>
       </div>
       <div className="flex space-x-2 self-start">
-        <Button size="icon" variant="outline">
+        <Button size="icon" variant="outline" onClick={() => setShowDetailViewActivity(prev => !prev)}>
           <BarChartHorizontal className="h-4 w-4" />
         </Button>
       </div>
@@ -697,12 +701,32 @@ export default function Dashboard() {
         </div>
       </main>
       </ResizablePanel>
-        {showDetailView && (
+        {showDetailViewSleep && (
           <>
             <ResizableHandle />
             <ResizablePanel className="flex flex-col" id="detail-panel" order={2}>
               <div className="p-4 min-h-screen">
-              <DetailViewMetrics day={formattedSelectedDay} />
+                <DetailViewSleepMetrics day={formattedSelectedDay} />
+              </div>
+            </ResizablePanel>
+          </>
+        )}
+        {showDetailViewReadiness && (
+          <>
+            <ResizableHandle />
+            <ResizablePanel className="flex flex-col" id="detail-panel" order={2}>
+              <div className="p-4 min-h-screen">
+                <DetailViewReadinessMetrics day={formattedSelectedDay} />
+              </div>
+            </ResizablePanel>
+          </>
+        )}
+        {showDetailViewActivity && (
+          <>
+            <ResizableHandle />
+            <ResizablePanel className="flex flex-col" id="detail-panel" order={2}>
+              <div className="p-4 min-h-screen">
+                <DetailViewActivityMetrics day={formattedSelectedDay} />
               </div>
             </ResizablePanel>
           </>
