@@ -193,7 +193,7 @@ export default function DetailViewActivityMetrics({ day }: DetailViewActivityMet
               <CardContent>
                   {metrics?.days.length ? (
                       <ResponsiveContainer width="100%" height={350}>
-                          <LineChart
+                          <BarChart
                               data={metrics?.days.map((day, index) => ({
                                   name: day,
                                   active_calories: metrics.active_calories[index],
@@ -211,47 +211,9 @@ export default function DetailViewActivityMetrics({ day }: DetailViewActivityMet
                                       fontSize: '0.6rem' 
                                   }} 
                               /> 
-                              <Line type="monotone" dataKey="active_calories" stroke="#4A4741" dot={(props) => {
-                                  const { cx, cy, index, value } = props;
-                                  const isSelectedDate = isSameDay(new Date(metrics.days[index]), new Date(day));
-                                  return (
-                                      <g key={`dot-active_calories-${index}-${value}`}>
-                                          <circle
-                                              cx={cx}
-                                              cy={cy}
-                                              r={isSelectedDate ? 12 : 3}
-                                              fill={isSelectedDate ? '#4A4741' : '#4A4741'}
-                                              style={{ transition: 'r 0.2s ease-in-out, fill 0.2s ease-in-out' }}
-                                          />
-                                          {isSelectedDate && (
-                                              <text x={cx} y={cy} textAnchor="middle" fill="white" fontSize="10px" dy=".3em">
-                                                  {value}
-                                              </text>
-                                          )}
-                                      </g>
-                                  );
-                              }} />
-                              <Line type="monotone" dataKey="target_calories" stroke="#4A47" dot={(props) => {
-                                  const { cx, cy, index, value } = props;
-                                  const isSelectedDate = isSameDay(new Date(metrics.days[index]), new Date(day));
-                                  return (
-                                      <g key={`dot-target_calories-${index}-${value}`}>
-                                          <circle
-                                              cx={cx}
-                                              cy={cy}
-                                              r={isSelectedDate ? 12 : 3}
-                                              fill={isSelectedDate ? '#4A47' : '#4A47'}
-                                              style={{ transition: 'r 0.2s ease-in-out, fill 0.2s ease-in-out' }}
-                                          />
-                                          {isSelectedDate && (
-                                              <text x={cx} y={cy} textAnchor="middle" fill="white" fontSize="10px" dy=".3em">
-                                                  {value}
-                                              </text>
-                                          )}
-                                      </g>
-                                  );
-                              }} />
-                          </LineChart>
+                              <Bar dataKey="active_calories" fill="#4A4741" />
+                              <Bar dataKey="target_calories" fill="#4A47" />
+                          </BarChart>
                       </ResponsiveContainer>
                   ) : (
                       <p className="text-sm text-muted-foreground">No data available.</p>
@@ -310,6 +272,45 @@ export default function DetailViewActivityMetrics({ day }: DetailViewActivityMet
                                   );
                               }} />
                           </LineChart>
+                      </ResponsiveContainer>
+                  ) : (
+                      <p className="text-sm text-muted-foreground">No data available.</p>
+                  )}
+              </CardContent>
+          </Card>
+          <Card x-chunk="dashboard-01-chunk-2">
+              <CardHeader className="flex flex-col items-start space-y-2">
+                  <div className="flex items-start justify-between w-full">
+                      <div>
+                          <HoverCard>
+                              <HoverCardTrigger>
+                                  <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
+                                      Daily Steps
+                                  </CardTitle>
+                              </HoverCardTrigger>
+                              <HoverCardContent>
+                                  <p className="text-sm text-muted-foreground">{}</p>
+                              </HoverCardContent>
+                          </HoverCard>
+                      </div>
+                  </div>
+              </CardHeader>
+              <CardContent>
+                  {metrics?.days.length ? (
+                      <ResponsiveContainer width="100%" height={350}>
+                          <BarChart
+                              data={metrics?.days.map((day, index) => ({
+                                  name: day,
+                                  steps: metrics.steps[index],
+                              }))}
+                              margin={{ top: 5, right: 20, left: -30, bottom: 5 }}
+                          >
+                              <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
+                              <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
+                              <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => (value !== 0 ? value : '')} />
+                              <Tooltip />
+                              <Bar dataKey="steps" fill="#4A4741" />
+                          </BarChart>
                       </ResponsiveContainer>
                   ) : (
                       <p className="text-sm text-muted-foreground">No data available.</p>
