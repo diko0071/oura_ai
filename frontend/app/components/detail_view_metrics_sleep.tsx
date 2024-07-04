@@ -1,49 +1,143 @@
 'use client'
 import Link from "next/link"
 import React, { useState, useEffect } from 'react';
-import ApiService from "@/app/services/apiService";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, LabelList, CartesianGrid, Cell } from 'recharts';
+import {
+  ArrowUpRight,
+  CircleUser,
+  CreditCard,
+  DollarSign,
+  Menu,
+  Package2,
+  Search,
+  Users,
+  Activity,
+  CircleHelp,
+  MessageSquareShare,
+  BarChartHorizontal,
+} from "lucide-react"
 
-type SleepMetrics = {
-    day: string;
-    score: number;
-    deep_sleep: number;
-    efficiency: number;
-    latency: number;
-    rem_sleep: number;
-    restfulness: number;
-    timing: number;
-    total_sleep: number;
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
+
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card"
+
+import {
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  File,
+  Home,
+  ListFilter,
+  MoreVertical,
+  Package,
+  PanelLeft,
+  Settings,
+  ShoppingCart,
+  Truck,
+  Users2,
+  MessageSquare,
+} from "lucide-react"
+
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+
+import { addDays, subDays, isToday, isYesterday, format, isSameDay } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react"
+ 
+import { cn } from "@/lib/utils"
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable"
+ 
+import ApiService from "@/app/services/apiService";
+
+
+type WeeklySleepMetrics = {
+    days: string[];
+    scores: number[];
+    deep_sleep: number[];
+    efficiency: number[];
+    latency: number[];
+    rem_sleep: number[];
+    restfulness: number[];
+    timing: number[];
+    total_sleep: number[];
+    metric: string;
 }
 
-function ProcessApiData(apiResponse: any[], day: string): SleepMetrics {
-    const data = apiResponse[0];
+function ProcessApiData(apiResponse: any): WeeklySleepMetrics {
     return {
-        day: day,
-        score: data.score,
-        deep_sleep: data.deep_sleep,
-        efficiency: data.efficiency,
-        latency: data.latency,
-        rem_sleep: data.rem_sleep,
-        restfulness: data.restfulness,
-        timing: data.timing,
-        total_sleep: data.total_sleep,
+        days: apiResponse.days,
+        scores: apiResponse.scores,
+        deep_sleep: apiResponse.deep_sleep,
+        efficiency: apiResponse.efficiency,
+        latency: apiResponse.latency,
+        rem_sleep: apiResponse.rem_sleep,
+        restfulness: apiResponse.restfulness,
+        timing: apiResponse.timing,
+        total_sleep: apiResponse.total_sleep,
+        metric: apiResponse.metric,
     }
 }
 
-export default function DetailViewMetrics({ date }: { date: string }) {
-    const [metrics, setMetrics] = useState<SleepMetrics | null>(null);
+export default function DetailViewMetrics() {
+    const [metrics, setMetrics] = useState<WeeklySleepMetrics | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
 
     useEffect(() => {
         setLoading(true);
-        const formattedDate = new Date(date).toISOString().split('T')[0];
-
-        const fetchSleepMetrics = ApiService.getWithParam('/api/oura/daily_sleep_row_for_day/', `date=${formattedDate}`);
+        const fetchSleepMetrics = ApiService.get('/api/oura/daily_sleep_row_for_week/');
 
         fetchSleepMetrics
             .then(response => {
-                const data = ProcessApiData(response, formattedDate);
+                const data = ProcessApiData(response);
                 setMetrics(data);
                 setLoading(false);
             })
@@ -51,53 +145,181 @@ export default function DetailViewMetrics({ date }: { date: string }) {
                 console.error('Error fetching data:', error);
                 setLoading(false);
             });
-    }, [date]);
+    }, []);
 
-    const renderBarChart = (dataKey: string, name: string, value: number) => (
-        <BarChart
-            width={600}
-            height={50}
-            data={[{ name, value, max: 100 }]}
-            layout="vertical"
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-        >
-            <CartesianGrid stroke="transparent" /> {/* Remove dotted lines */}
-            <XAxis type="number" domain={[0, 100]} ticks={[0, 100]} hide />
-            <YAxis type="category" dataKey="name" hide />
-            <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ backgroundColor: 'white', border: '1px solid #ccc' }} />
-            <Bar dataKey="max" fill="#D3D3D3"> {/* Continuation plot in gray */}
-                <LabelList dataKey="max" position="center" fill="transparent" />
-            </Bar>
-            <Bar dataKey="value" fill="#000000"> {/* Chart color black */}
-                <LabelList dataKey="value" position="center" fill="#FFFFFF" style={{ fontSize: 14 }} /> {/* Value white */}
-                <Cell key="value" fill="#000000" />
-            </Bar>
-            <text x={300} y={-10} textAnchor="middle" dominantBaseline="middle" style={{ fontSize: 16, fill: '#000000' }}>
-                {name}
-            </text> {/* Metric name centered above the chart */}
-        </BarChart>
-    );
-    
     return (
-        <div>
-            <h1>Detail View Metrics</h1>
-            {loading ? (
-                <p>Loading...</p>
-            ) : metrics ? (
-                <div>
-                    <p>Day: {metrics.day}</p>
-                    {renderBarChart('score', 'Score', metrics.score)}
-                    {renderBarChart('deep_sleep', 'Deep Sleep', metrics.deep_sleep)}
-                    {renderBarChart('efficiency', 'Efficiency', metrics.efficiency)}
-                    {renderBarChart('latency', 'Latency', metrics.latency)}
-                    {renderBarChart('rem_sleep', 'REM Sleep', metrics.rem_sleep)}
-                    {renderBarChart('restfulness', 'Restfulness', metrics.restfulness)}
-                    {renderBarChart('timing', 'Timing', metrics.timing)}
-                    {renderBarChart('total_sleep', 'Total Sleep', metrics.total_sleep)}
+        <div className="flex min-h-screen w-full flex-col">
+  <main className="flex flex-1 flex-col gap-4 p-4 md:gap-4 md:p-8">
+  <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-1">
+<Card x-chunk="dashboard-01-chunk-0">
+  <CardHeader className="flex flex-col items-start space-y-2">
+    <div className="flex items-start justify-between w-full">
+      <div>
+        <HoverCard>
+          <HoverCardTrigger>
+            <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
+              Sleep Score
+            </CardTitle>
+          </HoverCardTrigger>
+          <HoverCardContent>
+            <p className="text-sm text-muted-foreground">{}</p>
+          </HoverCardContent>
+        </HoverCard>
+      </div>
+    </div>
+  </CardHeader>
+  <CardContent>
+          {metrics?.days.length ? (
+    <ResponsiveContainer width="100%" height={350}>
+    <LineChart
+      data={metrics?.days.map((day, index) => ({ name: day, score: metrics.scores[index] }))}
+      margin={{ top: 5, right: 20, left: -30, bottom: 5 }}
+      >
+        <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
+        <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
+        <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => (value !== 0 ? value : '')} />
+        <Tooltip />
+        <Line
+          type="monotone"
+          dataKey="score"
+          stroke="#0F172A"
+          dot={(props) => {
+            const { cx, cy, index, value } = props;
+            const isSelectedDate = isSameDay(new Date(metrics.days[index]), metrics.days[0]);
+            return (
+              <g key={`dot-${index}-${value}`}>
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={isSelectedDate ? 12 : 3}
+                  fill={isSelectedDate ? '#4A4741' : '#4A4741'}
+                  style={{ transition: 'r 0.2s ease-in-out, fill 0.2s ease-in-out' }}
+                />
+                {isSelectedDate && (
+                  <text x={cx} y={cy} textAnchor="middle" fill="white" fontSize="10px" dy=".3em">
+                    {value}
+                  </text>
+                )}
+              </g>
+            );
+        }}
+      />
+    </LineChart>
+  </ResponsiveContainer>
+          ) : (
+            <p className="text-sm text-muted-foreground">No data available.</p>
+          )}
+        </CardContent>
+      </Card>
+      <Card x-chunk="dashboard-01-chunk-1">
+  <CardHeader className="flex flex-col items-start space-y-2">
+    <div className="flex items-start justify-between w-full">
+      <div>
+        <HoverCard>
+          <HoverCardTrigger>
+            <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
+              Deep Sleep
+            </CardTitle>
+          </HoverCardTrigger>
+          <HoverCardContent>
+            <p className="text-sm text-muted-foreground">{}</p>
+          </HoverCardContent>
+        </HoverCard>
+      </div>
+    </div>
+  </CardHeader>
+  <CardContent>
+          {metrics?.days.length ? (
+    <ResponsiveContainer width="100%" height={350}>
+    <LineChart
+      data={metrics?.days.map((day, index) => ({ name: day, deep_sleep: metrics.deep_sleep[index] }))}
+      margin={{ top: 5, right: 20, left: -30, bottom: 5 }}
+      >
+        <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
+        <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
+        <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => (value !== 0 ? value : '')} />
+        <Tooltip />
+        <Line
+          type="monotone"
+          dataKey="deep_sleep"
+          stroke="#0F172A"
+          dot={(props) => {
+            const { cx, cy, index, value } = props;
+            const isSelectedDate = isSameDay(new Date(metrics.days[index]), metrics.days[0]);
+            return (
+              <g key={`dot-${index}-${value}`}>
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={isSelectedDate ? 12 : 3}
+                  fill={isSelectedDate ? '#4A4741' : '#4A4741'}
+                  style={{ transition: 'r 0.2s ease-in-out, fill 0.2s ease-in-out' }}
+                />
+                {isSelectedDate && (
+                  <text x={cx} y={cy} textAnchor="middle" fill="white" fontSize="10px" dy=".3em">
+                    {value}
+                  </text>
+                )}
+              </g>
+            );
+        }}
+      />
+    </LineChart>
+  </ResponsiveContainer>
+          ) : (
+            <p className="text-sm text-muted-foreground">No data available.</p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+    <Card x-chunk="dashboard-01-chunk-2">
+            <CardHeader className="flex flex-col items-start space-y-2">
+                <div className="flex items-start justify-between w-full">
+                    <div>
+                        <HoverCard>
+                            <HoverCardTrigger>
+                                <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
+                                    Restfulness and Efficiency of Sleep
+                                </CardTitle>
+                            </HoverCardTrigger>
+                            <HoverCardContent>
+                                <p className="text-sm text-muted-foreground">{}</p>
+                            </HoverCardContent>
+                        </HoverCard>
+                    </div>
                 </div>
-            ) : (
-                <p>No data available</p>
-            )}
-        </div>
+            </CardHeader>
+            <CardContent>
+                {metrics?.days.length ? (
+                    <ResponsiveContainer width="100%" height={350}>
+                        <LineChart
+                            data={metrics?.days.map((day, index) => ({
+                                name: day,
+                                efficiency: metrics.efficiency[index],
+                                restfulness: metrics.restfulness[index]
+                            }))}
+                            margin={{ top: 5, right: 20, left: -30, bottom: 5 }}
+                        >
+                            <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
+                            <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
+                            <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => (value !== 0 ? value : '')} />
+                            <Tooltip />
+                            <Legend 
+                                wrapperStyle={{ 
+                                    textAlign: 'center', 
+                                    fontSize: '0.6rem' 
+                                }} 
+                            /> 
+                            <Line type="monotone" dataKey="efficiency" stroke="#4A4741" />
+                            <Line type="monotone" dataKey="restfulness" stroke="#4A47" />
+                        </LineChart>
+                    </ResponsiveContainer>
+                ) : (
+                    <p className="text-sm text-muted-foreground">No data available.</p>
+                )}
+            </CardContent>
+        </Card>
+    </main>
+    </div>
     );
 }

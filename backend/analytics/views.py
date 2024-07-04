@@ -167,50 +167,99 @@ def get_heart_data(start_date, end_date):
     return rows
 
 @api_view(['GET'])
-def oura_daily_activity_row_for_day(request):
-    date = request.query_params.get('date')
+def oura_daily_activity_row_for_week(request):
 
-    end_date = datetime.strptime(date, '%Y-%m-%d')
-    
-    start_date = end_date - timedelta(days=1)
+    end_date = datetime.today().strftime('%Y-%m-%d')
+
+    start_date = (datetime.today() - timedelta(days=7)).strftime('%Y-%m-%d')
 
     activity_data = get_activity_data(start_date, end_date)
 
-    if not activity_data:
-        return Response({'error': 'No data available for the specified date'}, status=404)
+    transformed_data = {
+        'days': [item['day'] for item in activity_data],
+        'score': [item['score'] for item in activity_data],
+        'active_calories': [item['active_calories'] for item in activity_data],
+        'average_met_minutes': [item['average_met_minutes'] for item in activity_data],
+        'equivalent_walking_distance': [item['equivalent_walking_distance'] for item in activity_data],
+        'high_activity_met_minutes': [item['high_activity_met_minutes'] for item in activity_data],
+        'high_activity_time': [item['high_activity_time'] for item in activity_data],
+        'inactivity_alerts': [item['inactivity_alerts'] for item in activity_data],
+        'low_activity_met_minutes': [item['low_activity_met_minutes'] for item in activity_data],
+        'low_activity_time': [item['low_activity_time'] for item in activity_data],
+        'medium_activity_met_minutes': [item['medium_activity_met_minutes'] for item in activity_data],
+        'medium_activity_time': [item['medium_activity_time'] for item in activity_data],
+        'meters_to_target': [item['meters_to_target'] for item in activity_data],
+        'non_wear_time': [item['non_wear_time'] for item in activity_data],
+        'resting_time': [item['resting_time'] for item in activity_data],
+        'sedentary_met_minutes': [item['sedentary_met_minutes'] for item in activity_data],
+        'sedentary_time': [item['sedentary_time'] for item in activity_data],
+        'steps': [item['steps'] for item in activity_data],
+        'target_calories': [item['target_calories'] for item in activity_data],
+        'target_meters': [item['target_meters'] for item in activity_data],
+        'total_calories': [item['total_calories'] for item in activity_data],
+        'timestamp': [item['timestamp'] for item in activity_data],
+        'meet_daily_targets': [item['meet_daily_targets'] for item in activity_data],
+        'move_every_hour': [item['move_every_hour'] for item in activity_data],
+        'recovery_time': [item['recovery_time'] for item in activity_data],
+        'stay_active': [item['stay_active'] for item in activity_data],
+        'training_frequency': [item['training_frequency'] for item in activity_data],
+        'training_volume': [item['training_volume'] for item in activity_data],
+        'metric': 'Daily Readiness Score'
+    }
 
-    return Response(activity_data)
+    return Response(transformed_data)
 
 @api_view(['GET'])
-def oura_daily_sleep_row_for_day(request):
-    date = request.query_params.get('date')
+def oura_daily_sleep_row_for_week(request):
 
-    end_date = date
+    end_date = datetime.today().strftime('%Y-%m-%d')
     
-    start_date = date
+    start_date = (datetime.today() - timedelta(days=7)).strftime('%Y-%m-%d')
 
     sleep_data = get_sleep_data(start_date, end_date)
 
-    if not sleep_data:
-        return Response({'error': 'No data available for the specified date'}, status=404)
+    transformed_data = {
+        'days': [item['day'] for item in sleep_data],
+        'scores': [item['score'] for item in sleep_data],
+        'deep_sleep': [item['deep_sleep'] for item in sleep_data],
+        'efficiency': [item['efficiency'] for item in sleep_data],
+        'latency': [item['latency'] for item in sleep_data],
+        'rem_sleep': [item['rem_sleep'] for item in sleep_data],
+        'restfulness': [item['restfulness'] for item in sleep_data],
+        'timing': [item['timing'] for item in sleep_data],
+        'total_sleep': [item['total_sleep'] for item in sleep_data],
+        'metric': 'Daily Sleep Score'
+    }
+    return Response(transformed_data)
 
-    return Response(sleep_data)
 
 
 @api_view(['GET'])
-def oura_daily_readiness_row_for_day(request):
-    date = request.query_params.get('date')
+def oura_daily_readiness_row_for_week(request):
 
-    end_date = date
+    end_date = datetime.today().strftime('%Y-%m-%d')
     
-    start_date = date
+    start_date = (datetime.today() - timedelta(days=7)).strftime('%Y-%m-%d')
 
     readiness_data = get_readiness_data(start_date, end_date)
 
-    if not readiness_data:
-        return Response({'error': 'No data available for the specified date'}, status=404)
+    transformed_data = {
+        'days': [item['day'] for item in readiness_data],
+        'scores': [item['score'] for item in readiness_data],
+        'temperature_deviation': [item['temperature_deviation'] for item in readiness_data],
+        'temperature_trend_deviation': [item['temperature_trend_deviation'] for item in readiness_data],
+        'activity_balance': [item['activity_balance'] for item in readiness_data],
+        'body_temperature': [item['body_temperature'] for item in readiness_data],
+        'hrv_balance': [item['hrv_balance'] for item in readiness_data],
+        'previous_day_activity': [item['previous_day_activity'] for item in readiness_data],
+        'previous_night': [item['previous_night'] for item in readiness_data],
+        'recovery_index': [item['recovery_index'] for item in readiness_data],
+        'resting_heart_rate': [item['resting_heart_rate'] for item in readiness_data],
+        'sleep_balance': [item['sleep_balance'] for item in readiness_data],
+        'metric': 'Daily Readiness Score'
+    }
 
-    return Response(readiness_data)
+    return Response(transformed_data)
 
 @api_view(['GET'])
 def oura_daily_readiness_score_for_week(request):

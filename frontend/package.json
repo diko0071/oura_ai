@@ -50,6 +50,8 @@
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.1",
+    "react-resizable": "^3.0.5",
+    "react-resizable-panels": "^2.0.20",
     "react-router-dom": "^6.23.0",
     "react-textarea-autosize": "^8.5.3",
     "react-toastify": "^10.0.5",
