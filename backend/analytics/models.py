@@ -22,3 +22,12 @@ class Prompts(models.Model):
     response = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class ModelTrainLogs(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    last_train_datetime = models.DateTimeField(auto_now_add=True)
+    last_train_status = models.TextField(null=True, blank=True)
+    last_train_error = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

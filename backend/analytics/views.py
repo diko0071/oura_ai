@@ -8,7 +8,7 @@ from rest_framework.decorators import api_view
 from .services import openai_call
 from .prompts import get_ai_insgihts_for_metric_prompt, oura_metrics_definition_daily_activity_score, oura_metrics_definition_daily_sleep_score, oura_metrics_definition_daily_readiness_score
 from .model_services import GenerateRowInsightsModel, TrainUpdateModel
-from .models import GeneratedInsights
+from .models import GeneratedInsights, ModelTrainLogs
 from .serializers import GeneratedInsightsSerializer
 from datetime import datetime, timedelta
 import json
@@ -347,12 +347,26 @@ def generate_insights_for_metric(request):
     return Response(serializer.data)
 
 
-@api_view(['GET'])
-def train_model(request):
-    
-    update_train_model.train_and_save_models()
-    
-    return Response({'message': 'Model trained'})
+@api_view(['POST'])
+def train_models_manually(request):
+    try:
+        update_train_model.train_and_save_models()
+
+        trained_model = ModelTrainLogs.objects.create(
+            user=request.user,
+            last_train_datetime=datetime.now(),
+            last_train_status='success'
+        )
+        return Response({'message': 'Model trained'})
+    except Exception as e:
+        
+        trained_model = ModelTrainLogs.objects.create(
+            user=request.user,
+            last_train_datetime=datetime.now(),
+            last_train_status='error',
+            last_train_error=str(e)
+        )
+        return Response({'message': 'Error training model'})
 
 
 @api_view(['GET'])

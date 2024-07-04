@@ -9,18 +9,34 @@ import requests
 from .model_services import TrainUpdateModel, GenerateRowInsightsModel
 from .services import openai_call
 from .prompts import get_ai_insgihts_for_metric_prompt, oura_metrics_definition_daily_activity_score, oura_metrics_definition_daily_sleep_score, oura_metrics_definition_daily_readiness_score
-from .models import GeneratedInsights
+from .models import GeneratedInsights, ModelTrainLogs
 
 
 
 @shared_task(name='train_models')
-def train_models():
+def train_models(user_id):
+    from useraccount.models import User
+    user = User.objects.get(id=user_id)
     model = TrainUpdateModel()
 
-    model.train_and_save_models()
-
-    return "Models trained and saved"
-
+    try:
+        model.train_and_save_models()
+        
+        trained_model = ModelTrainLogs.objects.create(
+            user=user,
+            last_train_datetime=datetime.now(),
+            last_train_status='success'
+        )
+        return "Model trained"
+    except Exception as e:
+        
+        trained_model = ModelTrainLogs.objects.create(
+            user=user,
+            last_train_datetime=datetime.now(),
+            last_train_status='error',
+            last_train_error=str(e)
+        )
+        return "Error training model"
 
 @shared_task(name='generate_daily_insights')
 def generate_daily_insights(user_id):
