@@ -1,6 +1,6 @@
 'use client'
 import Link from "next/link"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowUpRight,
   CircleUser,
@@ -95,7 +95,6 @@ import ApiService from "@/app/services/apiService";
 import 'react-resizable/css/styles.css';
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-
 
 import DetailViewMetrics from "./detail_view_metrics_sleep";
 
@@ -242,33 +241,6 @@ export default function Dashboard() {
       });
   }, []);
 
-  React.useEffect(() => {
-    setInsightsLoading(true);
-    const formattedDate = date.toISOString().split('T')[0];
-
-    const fetchReadinessInsights = ApiService.getWithParam('/api/oura/get_generated_insights_for_readiness_for_day/', `date=${formattedDate}`);
-    const fetchSleepInsights = ApiService.getWithParam('/api/oura/get_generated_insights_for_sleep_for_day/', `date=${formattedDate}`);
-    const fetchActivityInsights = ApiService.getWithParam('/api/oura/get_generated_insights_for_activity_for_day/', `date=${formattedDate}`);
-  
-    Promise.all([fetchReadinessInsights, fetchSleepInsights, fetchActivityInsights])
-      .then(([readinessInsightsData, sleepInsightsData, activityInsightsData]) => {
-  
-        const readinessInsightsProcessed = processInsightsData(readinessInsightsData);
-        const sleepInsightsProcessed = processInsightsData(sleepInsightsData);
-        const activityInsightsProcessed = processInsightsData(activityInsightsData);
-  
-        setReadinessInsights(readinessInsightsProcessed);
-        setSleepInsights(sleepInsightsProcessed);
-        setActivityInsights(activityInsightsProcessed);
-  
-        setInsightsLoading(false);
-      })
-      .catch(error => {
-        console.error('Failed to fetch insights:', error);
-        setInsightsLoading(false);
-      });
-  }, [date]);
-
   const handlePrevDay = () => setDate(subDays(date, 1));
   const handleNextDay = () => setDate(addDays(date, 1));
 
@@ -278,10 +250,43 @@ export default function Dashboard() {
     return format(date, "PPP");
   };
 
+  const [panelWidth, setPanelWidth] = useState<number>(window.innerWidth);
+
+  useEffect(() => {
+    const panelElement = document.querySelector('.resizable-panel');
+  
+    const handleResize = () => {
+      if (panelElement) {
+        const width = panelElement.clientWidth;
+        console.log('Panel width:', width);
+        setPanelWidth(width);
+      } else {
+        console.log('Panel element not found');
+      }
+    };
+  
+    // Create a ResizeObserver to observe changes in the panel size
+    const resizeObserver = new ResizeObserver(handleResize);
+  
+    if (panelElement) {
+      resizeObserver.observe(panelElement);
+    }
+  
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial call to set the width
+  
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (panelElement) {
+        resizeObserver.unobserve(panelElement);
+      }
+    };
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col">
       <ResizablePanelGroup className="flex flex-1 w-full" direction="horizontal">
-        <ResizablePanel className="flex-1 flex flex-col">
+      <ResizablePanel className="flex flex-col resizable-panel" id="main-panel" order={1}>
           <div className="flex flex-row items-center justify-end gap-2 p-4">
             <Button variant="outline" onClick={handlePrevDay}>
               <ChevronLeft className="h-4 w-4" />
@@ -315,7 +320,7 @@ export default function Dashboard() {
           </div>
 
           <main className="flex flex-1 flex-col gap-4 p-4 md:gap-4 md:p-8">
-            <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-1">
+          <div className={`grid gap-4 ${panelWidth < 850 ? 'grid-cols-1' : 'lg:grid-cols-2'}`}>
               <Card x-chunk="dashboard-01-chunk-0">
                 <CardHeader className="flex flex-col items-start space-y-2">
                   <div className="flex items-start justify-between w-full">
@@ -401,10 +406,9 @@ export default function Dashboard() {
         {showDetailView && (
           <>
             <ResizableHandle />
-            <ResizablePanel className="flex-1 flex flex-col">
+            <ResizablePanel className="flex flex-col" id="detail-panel" order={2}>
               <div className="p-4 bg-gray-100 min-h-screen">
-                <h2>Detailed View</h2>
-                <DetailViewMetrics />
+                <DetailViewMetrics/>
               </div>
             </ResizablePanel>
           </>

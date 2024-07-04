@@ -1,5 +1,5 @@
 'use client';
-import Dashboard from "../components/dashboard_2";
+import Dashboard from "../components/dashboard";
 
 const DashboardPage = () => {
     return (

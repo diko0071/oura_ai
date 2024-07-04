@@ -90,6 +90,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
+
+import DetailViewMetrics from "./detail_view_metrics_sleep";
+
 import ApiService from "@/app/services/apiService";
 
 export type MetricScore = {
@@ -180,12 +184,14 @@ function processInsightsData(apiResponse: any): InsightFormat | null {
 }
 
 export default function Dashboard() {
+  const [showDetailView, setShowDetailView] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [data, setData] = useState<UnifiedData | null>(null);
   const [readinessInsights, setReadinessInsights] = useState<InsightFormat | null>(null);
   const [sleepInsights, setSleepInsights] = useState<InsightFormat | null>(null);
   const [activityInsights, setActivityInsights] = useState<InsightFormat | null>(null);
   const [insightsLoading, setInsightsLoading] = useState<boolean>(false);
+  const [selectedDay, setSelectedDay] = useState<string>(format(new Date(), "PPP"));
 
   const wrapSecondaryMetrics = (text: string) => {
     const metrics = ["HRV", "Sleep Score", "No Activity Score", "Sleep Latency", "Stress Level", "Activity Level", "Sleep Quality"];
@@ -274,8 +280,16 @@ export default function Dashboard() {
       });
   }, [date]);
 
-  const handlePrevDay = () => setDate(subDays(date, 1));
-  const handleNextDay = () => setDate(addDays(date, 1));
+  const handlePrevDay = () => {
+    const newDate = subDays(date, 1);
+    setDate(newDate);
+    setSelectedDay(format(newDate, "PPP"));
+  };
+  const handleNextDay = () => {
+    const newDate = addDays(date, 1);
+    setDate(newDate);
+    setSelectedDay(format(newDate, "PPP"));
+  };
 
   const getDateLabel = (date: Date) => {
     if (isToday(date)) return "Today";
@@ -283,8 +297,45 @@ export default function Dashboard() {
     return format(date, "PPP");
   };
 
+
+  const [panelWidth, setPanelWidth] = useState<number>(window.innerWidth);
+
+  useEffect(() => {
+    const panelElement = document.querySelector('.resizable-panel');
+  
+    const handleResize = () => {
+      if (panelElement) {
+        const width = panelElement.clientWidth;
+        console.log('Panel width:', width);
+        setPanelWidth(width);
+      } else {
+        console.log('Panel element not found');
+      }
+    };
+  
+    const resizeObserver = new ResizeObserver(handleResize);
+  
+    if (panelElement) {
+      resizeObserver.observe(panelElement);
+    }
+  
+    window.addEventListener('resize', handleResize);
+    handleResize();
+  
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (panelElement) {
+        resizeObserver.unobserve(panelElement);
+      }
+    };
+  }, []);
+
+  const formattedSelectedDay = format(date, "yyyy-MM-dd");
+
   return (
 <div className="flex min-h-screen w-full flex-col">
+<ResizablePanelGroup className="flex flex-1 w-full" direction="horizontal">
+<ResizablePanel className="flex flex-col resizable-panel" id="main-panel" order={1}>
   <main className="flex flex-1 flex-col gap-4 p-4 md:gap-4 md:p-8">
   <div className="flex flex-row items-center justify-end gap-2">
       <Button variant="outline" onClick={handlePrevDay}>
@@ -310,6 +361,7 @@ export default function Dashboard() {
             onSelect={(selectedDate) => {
               if (selectedDate) {
                 setDate(selectedDate);
+                setSelectedDay(format(selectedDate, "yyyy-MM-dd"));
               }
             }}
             initialFocus
@@ -320,7 +372,7 @@ export default function Dashboard() {
         <ChevronRight className="h-4 w-4" />
       </Button>
     </div>
-  <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-2">
+    <div className={`grid gap-4 ${panelWidth < 850 ? 'grid-cols-1' : 'lg:grid-cols-2'}`}>
   <Card x-chunk="dashboard-01-chunk-0">
   <CardHeader className="flex flex-col items-start space-y-2">
     <div className="flex items-start justify-between w-full">
@@ -340,7 +392,7 @@ export default function Dashboard() {
         </CardDescription>
       </div>
       <div className="flex space-x-2 self-start">
-        <Button size="icon" variant="outline">
+        <Button size="icon" variant="outline" onClick={() => setShowDetailView(true)}>
           <BarChartHorizontal className="h-4 w-4" />
         </Button>
       </div>
@@ -644,6 +696,18 @@ export default function Dashboard() {
 </Card>
         </div>
       </main>
+      </ResizablePanel>
+        {showDetailView && (
+          <>
+            <ResizableHandle />
+            <ResizablePanel className="flex flex-col" id="detail-panel" order={2}>
+              <div className="p-4 min-h-screen">
+              <DetailViewMetrics day={formattedSelectedDay} />
+              </div>
+            </ResizablePanel>
+          </>
+        )}
+      </ResizablePanelGroup>
     </div>
   )
 }

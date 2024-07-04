@@ -6,7 +6,7 @@ const DetailViewSleepPage = () => {
 
     return (
         <div className="pl-[56px]">
-            <DetailViewMetrics date={date} />
+            <DetailViewMetrics/>
         </div>
     )
 }

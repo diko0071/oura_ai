@@ -48,6 +48,8 @@ import {
   MessageSquare,
 } from "lucide-react"
 
+import { parse } from 'date-fns';
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -112,6 +114,10 @@ type WeeklySleepMetrics = {
     metric: string;
 }
 
+type DetailViewMetricsProps = {
+  day: string;
+}
+
 function ProcessApiData(apiResponse: any): WeeklySleepMetrics {
     return {
         days: apiResponse.days,
@@ -127,25 +133,30 @@ function ProcessApiData(apiResponse: any): WeeklySleepMetrics {
     }
 }
 
-export default function DetailViewMetrics() {
-    const [metrics, setMetrics] = useState<WeeklySleepMetrics | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
+export default function DetailViewMetrics({ day }: DetailViewMetricsProps) {
+  const [metrics, setMetrics] = useState<WeeklySleepMetrics | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
-    useEffect(() => {
-        setLoading(true);
-        const fetchSleepMetrics = ApiService.get('/api/oura/daily_sleep_row_for_week/');
 
-        fetchSleepMetrics
-            .then(response => {
-                const data = ProcessApiData(response);
-                setMetrics(data);
-                setLoading(false);
-            })
-            .catch(error => {
-                console.error('Error fetching data:', error);
-                setLoading(false);
-            });
-    }, []);
+  useEffect(() => {
+    setLoading(true);
+    const fetchSleepMetrics = ApiService.get('/api/oura/daily_sleep_row_for_week/');
+
+    fetchSleepMetrics
+      .then(response => {
+        const data = ProcessApiData(response);
+        setMetrics(data);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('Error fetching data:', error);
+        setLoading(false);
+      });
+  }, [day]);
+
+  useEffect(() => {
+    console.log("Selected day:", day);
+  }, [day]);
 
     return (
         <div className="flex min-h-screen w-full flex-col">
@@ -170,42 +181,43 @@ export default function DetailViewMetrics() {
   </CardHeader>
   <CardContent>
           {metrics?.days.length ? (
-    <ResponsiveContainer width="100%" height={350}>
-    <LineChart
-      data={metrics?.days.map((day, index) => ({ name: day, score: metrics.scores[index] }))}
-      margin={{ top: 5, right: 20, left: -30, bottom: 5 }}
-      >
-        <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
-        <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
-        <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => (value !== 0 ? value : '')} />
-        <Tooltip />
-        <Line
-          type="monotone"
-          dataKey="score"
-          stroke="#0F172A"
-          dot={(props) => {
-            const { cx, cy, index, value } = props;
-            const isSelectedDate = isSameDay(new Date(metrics.days[index]), metrics.days[0]);
-            return (
-              <g key={`dot-${index}-${value}`}>
-                <circle
-                  cx={cx}
-                  cy={cy}
-                  r={isSelectedDate ? 12 : 3}
-                  fill={isSelectedDate ? '#4A4741' : '#4A4741'}
-                  style={{ transition: 'r 0.2s ease-in-out, fill 0.2s ease-in-out' }}
-                />
-                {isSelectedDate && (
-                  <text x={cx} y={cy} textAnchor="middle" fill="white" fontSize="10px" dy=".3em">
-                    {value}
-                  </text>
-                )}
-              </g>
-            );
-        }}
-      />
-    </LineChart>
-  </ResponsiveContainer>
+                <ResponsiveContainer width="100%" height={350}>
+                <LineChart
+                  data={metrics?.days.map((day, index) => ({ name: day, score: metrics.scores[index] }))}
+                  margin={{ top: 5, right: 20, left: -30, bottom: 5 }}
+                >
+                  <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
+                  <XAxis dataKey="name" stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} />
+                  <YAxis stroke="rgba(0, 0, 0, 0.5)" tick={{ fontSize: '0.7rem' }} tickLine={false} tickFormatter={(value) => (value !== 0 ? value : '')} />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey="score"
+                    stroke="#0F172A"
+                    dot={(props) => {
+                      const { cx, cy, index, value } = props;
+                      const isSelectedDate = isSameDay(new Date(metrics.days[index]), new Date(day));
+                      console.log("isSelectedDate:", isSelectedDate);
+                      return (
+                        <g key={`dot-${index}-${value}`}>
+                          <circle
+                            cx={cx}
+                            cy={cy}
+                            r={isSelectedDate ? 12 : 3}
+                            fill={isSelectedDate ? '#4A4741' : '#4A4741'}
+                            style={{ transition: 'r 0.2s ease-in-out, fill 0.2s ease-in-out' }}
+                          />
+                          {isSelectedDate && (
+                            <text x={cx} y={cy} textAnchor="middle" fill="white" fontSize="10px" dy=".3em">
+                              {value}
+                            </text>
+                          )}
+                        </g>
+                      );
+                    }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
           ) : (
             <p className="text-sm text-muted-foreground">No data available.</p>
           )}
@@ -245,7 +257,8 @@ export default function DetailViewMetrics() {
           stroke="#0F172A"
           dot={(props) => {
             const { cx, cy, index, value } = props;
-            const isSelectedDate = isSameDay(new Date(metrics.days[index]), metrics.days[0]);
+            const isSelectedDate = isSameDay(new Date(metrics.days[index]), new Date(day));
+            console.log(day)
             return (
               <g key={`dot-${index}-${value}`}>
                 <circle
@@ -310,8 +323,46 @@ export default function DetailViewMetrics() {
                                     fontSize: '0.6rem' 
                                 }} 
                             /> 
-                            <Line type="monotone" dataKey="efficiency" stroke="#4A4741" />
-                            <Line type="monotone" dataKey="restfulness" stroke="#4A47" />
+                            <Line type="monotone" dataKey="efficiency" stroke="#4A4741" dot={(props) => {
+                                const { cx, cy, index, value } = props;
+                                const isSelectedDate = isSameDay(new Date(metrics.days[index]), new Date(day));
+                                return (
+                                    <g key={`dot-efficiency-${index}-${value}`}>
+                                        <circle
+                                            cx={cx}
+                                            cy={cy}
+                                            r={isSelectedDate ? 12 : 3}
+                                            fill={isSelectedDate ? '#4A4741' : '#4A4741'}
+                                            style={{ transition: 'r 0.2s ease-in-out, fill 0.2s ease-in-out' }}
+                                        />
+                                        {isSelectedDate && (
+                                            <text x={cx} y={cy} textAnchor="middle" fill="white" fontSize="10px" dy=".3em">
+                                                {value}
+                                            </text>
+                                        )}
+                                    </g>
+                                );
+                            }} />
+                            <Line type="monotone" dataKey="restfulness" stroke="#4A47" dot={(props) => {
+                                const { cx, cy, index, value } = props;
+                                const isSelectedDate = isSameDay(new Date(metrics.days[index]), new Date(day));
+                                return (
+                                    <g key={`dot-restfulness-${index}-${value}`}>
+                                        <circle
+                                            cx={cx}
+                                            cy={cy}
+                                            r={isSelectedDate ? 12 : 3}
+                                            fill={isSelectedDate ? '#4A47' : '#4A47'}
+                                            style={{ transition: 'r 0.2s ease-in-out, fill 0.2s ease-in-out' }}
+                                        />
+                                        {isSelectedDate && (
+                                            <text x={cx} y={cy} textAnchor="middle" fill="white" fontSize="10px" dy=".3em">
+                                                {value}
+                                            </text>
+                                        )}
+                                    </g>
+                                );
+                            }} />
                         </LineChart>
                     </ResponsiveContainer>
                 ) : (
