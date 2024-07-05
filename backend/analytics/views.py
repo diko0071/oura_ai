@@ -348,25 +348,59 @@ def generate_insights_for_metric(request):
 
 
 @api_view(['POST'])
-def train_models_manually(request):
-    try:
-        update_train_model.train_and_save_models()
+def train_models_manually_and_get_insights(request):
 
-        trained_model = ModelTrainLogs.objects.create(
-            user=request.user,
-            last_train_datetime=datetime.now(),
-            last_train_status='success'
-        )
-        return Response({'message': 'Model trained'})
-    except Exception as e:
-        
-        trained_model = ModelTrainLogs.objects.create(
-            user=request.user,
-            last_train_datetime=datetime.now(),
-            last_train_status='error',
-            last_train_error=str(e)
-        )
-        return Response({'message': 'Error training model'})
+    models_trained_today = ModelTrainLogs.objects.filter(user=request.user, last_train_datetime__date=datetime.today().date()).exists()
+    insights_generated_today = GeneratedInsights.objects.filter(user=request.user, created_at__date=datetime.today().date()).exists()
+
+
+    if models_trained_today and insights_generated_today:
+        return Response({'message': 'Models already trained and insights already generated today'})
+    
+    if not models_trained_today:
+        try:
+            update_train_model.train_and_save_models()
+            ModelTrainLogs.objects.create(
+                user=request.user,
+                last_train_datetime=datetime.now(),
+                last_train_status='success'
+            )
+
+        except Exception as e:
+            ModelTrainLogs.objects.create(
+                user=request.user,
+                last_train_datetime=datetime.now(),
+                last_train_status='error',
+                last_train_error=str(e)
+            )
+            return Response({'message': 'Error training model'})
+
+    if not insights_generated_today:
+        try:
+            apis = ['daily_sleep', 'daily_readiness', 'daily_activity']
+            for api in apis:
+                metric = f'{api}_score'
+                insights = model.get_row_insights_for_metric(metric, api)
+                definition_var_name = f'oura_metrics_definition_{metric}'
+                definition = globals().get(definition_var_name, '')
+
+                ai_insights = openai_call(
+                    human_message=f'Key metric you MUST provide insights for: {metric}.\n\nAdditional context data: {str(insights)}',
+                    system_message=get_ai_insgihts_for_metric_prompt + definition,
+                    user=request.user
+                )
+
+                GeneratedInsights.objects.create(
+                    user=request.user,
+                    generated_insights_text=ai_insights,
+                    metric=metric
+                )
+            return Response({'message': 'Models trained and insights generated'})
+        except Exception as e:
+            return Response({'message': 'Error generating insights'})
+
+    return Response({'message': 'Models trained today, insights already generated'})
+
 
 
 @api_view(['GET'])
