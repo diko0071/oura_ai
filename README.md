@@ -4,7 +4,7 @@
 
 The Oura AI Extension allows you to generate proactive insights based on three key metrics: readiness, sleep, and activity.
 
-Check out the short video about it: [link to Loom video](https://www.loom.com/share/9059f472834945b6bf35a2e9961ba06e?sid=f8edcf17-0780-4a56-974a-fea8907246d9)
+Check out the short video about it: [Link to Loom video](https://www.loom.com/share/9059f472834945b6bf35a2e9961ba06e?sid=f8edcf17-0780-4a56-974a-fea8907246d9)
 
 ![Oura](/images/oura.png)
 
