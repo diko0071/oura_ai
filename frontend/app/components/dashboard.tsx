@@ -84,17 +84,21 @@ import { Calendar as CalendarIcon } from "lucide-react"
  
 import { cn } from "@/lib/utils"
 import { Calendar } from "@/components/ui/calendar"
+import { secondaryMetricsDefinitions } from "@/app/metrics";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
 
+import { toast } from "sonner"
+
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 
 import DetailViewSleepMetrics from "./detail_view_metrics_sleep";
 import DetailViewReadinessMetrics from "./detail_view_metrics_readiness";
 import DetailViewActivityMetrics from "./detail_view_metrics_activity";
+import { Tooltip as TooltipUI, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import ApiService from "@/app/services/apiService";
 
@@ -196,9 +200,40 @@ export default function Dashboard() {
   const [activityInsights, setActivityInsights] = useState<InsightFormat | null>(null);
   const [insightsLoading, setInsightsLoading] = useState<boolean>(false);
   const [selectedDay, setSelectedDay] = useState<string>(format(new Date(), "PPP"));
+  const [isTraining, setIsTraining] = useState<boolean>(false);
+  
+  
+  const handleTrainModel = async () => {
+    setIsTraining(true);
+    try {
+      const response = await ApiService.post_auth('/api/oura/train_models_manually/', {});
+      if (response.message === 'Error training model' || response.message === 'Error generating insights' || response.message === 'Models already trained and insights already generated today') {
+        toast("Error training model", {
+          description: response.message,
+          action: {
+            label: "Close",
+            onClick: () => console.log("Toast closed"),
+          },
+        });
+      } else {
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Failed to train model:', error);
+      toast("Failed to train model", {
+        description: "An unexpected error occurred. Please try again later.",
+        action: {
+          label: "Close",
+          onClick: () => console.log("Toast closed"),
+        },
+      });
+    } finally {
+      setIsTraining(false);
+    }
+  };
 
   const wrapSecondaryMetrics = (text: string) => {
-    const metrics = ["HRV", "Sleep Score", "No Activity Score", "Sleep Latency", "Stress Level", "Activity Level", "Sleep Quality"];
+    const metrics = Object.keys(secondaryMetricsDefinitions);
     const regex = new RegExp(`\\b(${metrics.join('|')})\\b`, 'gi');
   
     return text.split(regex).map((part, index) => {
@@ -216,7 +251,7 @@ export default function Dashboard() {
             </HoverCardTrigger>
             <HoverCardContent>
               <p className="text-sm text-muted-foreground">
-                {secondaryMetrics[matchedMetric as keyof typeof secondaryMetrics]}
+                {secondaryMetricsDefinitions[matchedMetric as keyof typeof secondaryMetricsDefinitions]}
               </p>
             </HoverCardContent>
           </HoverCard>
@@ -341,41 +376,60 @@ export default function Dashboard() {
 <ResizablePanelGroup className="flex flex-1 w-full" direction="horizontal">
 <ResizablePanel className="flex flex-col resizable-panel" id="main-panel" order={1}>
   <main className="flex flex-1 flex-col gap-4 p-4 md:gap-4 md:p-8">
-  <div className="flex flex-row items-center justify-end gap-2">
-      <Button variant="outline" onClick={handlePrevDay}>
-        <ChevronLeft className="h-4 w-4" />
-      </Button>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant={"outline"}
-            className={cn(
-              "w-[200px] justify-start text-left font-normal", 
-              !date && "text-muted-foreground"
-            )}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {getDateLabel(date)}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0">
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={(selectedDate) => {
-              if (selectedDate) {
-                setDate(selectedDate);
-                setSelectedDay(format(selectedDate, "yyyy-MM-dd"));
-              }
-            }}
-            initialFocus
-          />
-        </PopoverContent>
-      </Popover>
-      <Button variant="outline" onClick={handleNextDay} disabled={isToday(date)}>
-        <ChevronRight className="h-4 w-4" />
-      </Button>
-    </div>
+  <div className="flex flex-row items-center justify-between gap-2">
+    <div className="flex flex-row items-center gap-2">
+    <Button variant="outline" onClick={handleTrainModel} disabled={isTraining}>
+    {isTraining ? 'Generating...' : 'Generate Insights'}
+  </Button>
+  <HoverCard>
+          <HoverCardTrigger>
+            <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
+              <CircleHelp className="h-4 w-4" />
+            </CardTitle>
+          </HoverCardTrigger>
+          <HoverCardContent>
+            <p className="text-sm text-muted-foreground">It will take till 3 min to train model and generate new insights for you.
+      Because we do not know what time you wake up (it is important to be able generate insights about sleep). 
+      We will ask you click this button and wait a little bit.</p>
+          </HoverCardContent>
+        </HoverCard>
+  </div>
+  <div className="flex flex-row items-center gap-2">
+    <Button variant="outline" onClick={handlePrevDay}>
+      <ChevronLeft className="h-4 w-4" />
+    </Button>
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant={"outline"}
+          className={cn(
+            "w-[200px] justify-start text-left font-normal", 
+            !date && "text-muted-foreground"
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {getDateLabel(date)}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={(selectedDate) => {
+            if (selectedDate) {
+              setDate(selectedDate);
+              setSelectedDay(format(selectedDate, "yyyy-MM-dd"));
+            }
+          }}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+    <Button variant="outline" onClick={handleNextDay} disabled={isToday(date)}>
+      <ChevronRight className="h-4 w-4" />
+    </Button>
+  </div>
+</div>
     <div className={`grid gap-4 ${panelWidth < 850 ? 'grid-cols-1' : 'lg:grid-cols-2'}`}>
   <Card x-chunk="dashboard-01-chunk-0">
   <CardHeader className="flex flex-col items-start space-y-2">
@@ -456,9 +510,6 @@ export default function Dashboard() {
       Insights based on your readiness scores.
     </CardDescription>
   </div>
-  <Button size="icon" variant="outline" className="self-start">
-    <MessageSquareShare className="h-4 w-4" />
-  </Button>
 </div>
   </CardHeader>
   <CardContent>
@@ -563,9 +614,6 @@ export default function Dashboard() {
       Insights based on your sleep scores.
     </CardDescription>
   </div>
-  <Button size="icon" variant="outline" className="self-start">
-    <MessageSquareShare className="h-4 w-4" />
-  </Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -670,9 +718,6 @@ export default function Dashboard() {
       Insights based on your activity scores.
     </CardDescription>
   </div>
-  <Button size="icon" variant="outline" className="self-start">
-    <MessageSquareShare className="h-4 w-4" />
-  </Button>
 </div>
   </CardHeader>
   <CardContent>

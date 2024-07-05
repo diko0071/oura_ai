@@ -166,19 +166,13 @@ export default function DetailViewMetrics({ day }: DetailViewMetricsProps) {
   <Card x-chunk="dashboard-01-chunk-0">
             <CardHeader className="flex flex-col items-start space-y-2">
               <div className="flex items-start justify-between w-full">
-                <div>
-                  <HoverCard>
-                    <HoverCardTrigger>
-                      <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
-                        Total Sleep and Sleep Latency
-                      </CardTitle>
-                    </HoverCardTrigger>
-                    <HoverCardContent>
-                      <p className="text-sm text-muted-foreground">{}</p>
-                    </HoverCardContent>
-                  </HoverCard>
-                </div>
+                <CardTitle className="font-semibold">
+                  Total Sleep and Sleep Latency
+                </CardTitle>
               </div>
+              <CardDescription>
+                Total sleep is the amount of time you've slept. Sleep latency is the technical term for the length of time it takes you to fall asleep.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {metrics?.days.length ? (
@@ -209,19 +203,13 @@ export default function DetailViewMetrics({ day }: DetailViewMetricsProps) {
     <Card x-chunk="dashboard-01-chunk-2">
             <CardHeader className="flex flex-col items-start space-y-2">
                 <div className="flex items-start justify-between w-full">
-                    <div>
-                        <HoverCard>
-                            <HoverCardTrigger>
-                                <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
+                <CardTitle className="font-semibold">
                                     Restfulness and Efficiency
                                 </CardTitle>
-                            </HoverCardTrigger>
-                            <HoverCardContent>
-                                <p className="text-sm text-muted-foreground">{}</p>
-                            </HoverCardContent>
-                        </HoverCard>
-                    </div>
                 </div>
+                <CardDescription>
+                    Sleep efficiency is a measurement of your overall sleep quality. Restfulness is a measure of how soundly you slept through the night.
+                </CardDescription>
             </CardHeader>
             <CardContent>
                 {metrics?.days.length ? (
@@ -294,19 +282,13 @@ export default function DetailViewMetrics({ day }: DetailViewMetricsProps) {
         <Card x-chunk="dashboard-01-chunk-2">
             <CardHeader className="flex flex-col items-start space-y-2">
                 <div className="flex items-start justify-between w-full">
-                    <div>
-                        <HoverCard>
-                            <HoverCardTrigger>
-                                <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
+                    <CardTitle className="font-semibold">
                                     Deep and REM 
                                 </CardTitle>
-                            </HoverCardTrigger>
-                            <HoverCardContent>
-                                <p className="text-sm text-muted-foreground">{}</p>
-                            </HoverCardContent>
-                        </HoverCard>
-                    </div>
                 </div>
+                <CardDescription>
+                    REM (rapid eye movement) sleep is known as the “mentally restorative” stage of sleep given that it’s highly associated with memory consolidation, learning, creativity and dreaming. Deep sleep is also known as slow wave sleep (SWS) and the “physically restorative” stage of sleep.
+                </CardDescription>
             </CardHeader>
             <CardContent>
                 {metrics?.days.length ? (

@@ -41,6 +41,30 @@ The decision about impact of metric you MUST do based on several factors:
 3) Values of features and target metric. Each feature for current and previous week have real values by days. For last month and 3 month — it has mean values and also features. Keep everything in mind.
 4) Focus ONLY on today metric and try to explain today's value of the Target metric. 
 
+The format of Insights: 
+```
+Insight 1: ... 
+
+Insight 2: ...
+
+Insight 3: ...
+
+And more if there are more insights.
+
+Insight N: ...
+```
+
+Be concise and short with insights, not more than 2 sentences. STRCTICTLY follow the format, no titles, no additional characters, just insights.
+
+Write very explictiy each metric you reffering to. 
+
+Example: 
+Bad: You deep sleep was bad.
+Good: You Deep Sleep Time was bad.
+
+
+Do not use daily_sleep_deep_sleep, use Deep Sleep. Daily Sleep is preifx. NEVER use underscore in the text you generate. 
+
 Today date: {today}. 
 """
 

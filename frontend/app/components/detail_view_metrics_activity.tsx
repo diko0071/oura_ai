@@ -146,6 +146,7 @@ export default function DetailViewActivityMetrics({ day }: DetailViewActivityMet
 
     const [metrics, setMetrics] = useState<ActivityMetrics | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
+
   
   
     useEffect(() => {
@@ -176,19 +177,13 @@ export default function DetailViewActivityMetrics({ day }: DetailViewActivityMet
       <Card x-chunk="dashboard-01-chunk-0">
               <CardHeader className="flex flex-col items-start space-y-2">
                   <div className="flex items-start justify-between w-full">
-                      <div>
-                          <HoverCard>
-                              <HoverCardTrigger>
-                                  <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
+                      <CardTitle className="font-semibold">
                                       Active and Target Calories
-                                  </CardTitle>
-                              </HoverCardTrigger>
-                              <HoverCardContent>
-                                  <p className="text-sm text-muted-foreground">{}</p>
-                              </HoverCardContent>
-                          </HoverCard>
-                      </div>
+                          </CardTitle>
                   </div>
+                  <CardDescription>
+                              Active calories is the amount of calories you've burned while you've been active. Target calories is the metric that you need to meet to achieve your fitness goals.
+                          </CardDescription>
               </CardHeader>
               <CardContent>
                   {metrics?.days.length ? (
@@ -223,19 +218,13 @@ export default function DetailViewActivityMetrics({ day }: DetailViewActivityMet
           <Card x-chunk="dashboard-01-chunk-2">
               <CardHeader className="flex flex-col items-start space-y-2">
                   <div className="flex items-start justify-between w-full">
-                      <div>
-                          <HoverCard>
-                              <HoverCardTrigger>
-                                  <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
+                      <CardTitle className="font-semibold">
                                       Meet Daily Targets
                                   </CardTitle>
-                              </HoverCardTrigger>
-                              <HoverCardContent>
-                                  <p className="text-sm text-muted-foreground">{}</p>
-                              </HoverCardContent>
-                          </HoverCard>
-                      </div>
                   </div>
+                  <CardDescription>
+                              Meet daily targets is the metric that shows how often you've reached your daily activity targets over the past 7 days. Oura gives you a daily activity target based on your age, sex and readiness level.
+                          </CardDescription>
               </CardHeader>
               <CardContent>
                   {metrics?.days.length ? (
@@ -281,19 +270,13 @@ export default function DetailViewActivityMetrics({ day }: DetailViewActivityMet
           <Card x-chunk="dashboard-01-chunk-2">
               <CardHeader className="flex flex-col items-start space-y-2">
                   <div className="flex items-start justify-between w-full">
-                      <div>
-                          <HoverCard>
-                              <HoverCardTrigger>
-                                  <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
+                      <CardTitle className="font-semibold">
                                       Daily Steps
                                   </CardTitle>
-                              </HoverCardTrigger>
-                              <HoverCardContent>
-                                  <p className="text-sm text-muted-foreground">{}</p>
-                              </HoverCardContent>
-                          </HoverCard>
-                      </div>
                   </div>
+                  <CardDescription>
+                              Daily step count is one measure of your daily physical activity.
+                          </CardDescription>
               </CardHeader>
               <CardContent>
                   {metrics?.days.length ? (

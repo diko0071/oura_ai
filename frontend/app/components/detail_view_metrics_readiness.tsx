@@ -171,19 +171,13 @@ export default function DetailViewReadinessMetric({ day }: DetailViewReadinessMe
       <Card x-chunk="dashboard-01-chunk-0">
               <CardHeader className="flex flex-col items-start space-y-2">
                   <div className="flex items-start justify-between w-full">
-                      <div>
-                          <HoverCard>
-                              <HoverCardTrigger>
-                                  <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
-                                      Temperature Deviation and Trend
-                                  </CardTitle>
-                              </HoverCardTrigger>
-                              <HoverCardContent>
-                                  <p className="text-sm text-muted-foreground">{}</p>
-                              </HoverCardContent>
-                          </HoverCard>
-                      </div>
+                      <CardTitle className="font-semibold">
+                          Temperature Deviation and Trend
+                      </CardTitle>
                   </div>
+                  <CardDescription>
+                  Oura measures your temperature trends by measuring your skin temperature instead, which shows much more variation, making it a key indicator of what influences your health.
+                  </CardDescription>
               </CardHeader>
               <CardContent>
                   {metrics?.days.length ? (
@@ -256,19 +250,13 @@ export default function DetailViewReadinessMetric({ day }: DetailViewReadinessMe
           <Card x-chunk="dashboard-01-chunk-2">
               <CardHeader className="flex flex-col items-start space-y-2">
                   <div className="flex items-start justify-between w-full">
-                      <div>
-                          <HoverCard>
-                              <HoverCardTrigger>
-                                  <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
-                                      Activity and Body Balance
-                                  </CardTitle>
-                              </HoverCardTrigger>
-                              <HoverCardContent>
-                                  <p className="text-sm text-muted-foreground">{}</p>
-                              </HoverCardContent>
-                          </HoverCard>
-                      </div>
+                      <CardTitle className="font-semibold">
+                          Activity and Body Balance
+                      </CardTitle>
                   </div>
+                  <CardDescription>
+                      Optimal Activity balance indicates that you've been active, but kept from training at your maximum capacity. This has boosted your recovery and helped build up your energy levels.
+                  </CardDescription>
               </CardHeader>
               <CardContent>
                   {metrics?.days.length ? (
@@ -341,19 +329,13 @@ export default function DetailViewReadinessMetric({ day }: DetailViewReadinessMe
           <Card x-chunk="dashboard-01-chunk-2">
               <CardHeader className="flex flex-col items-start space-y-2">
                   <div className="flex items-start justify-between w-full">
-                      <div>
-                          <HoverCard>
-                              <HoverCardTrigger>
-                                  <CardTitle className="font-semibold underline underline-offset-4 decoration-dotted cursor-pointer">
-                                      Previous Day Sleep and Activity
-                                  </CardTitle>
-                              </HoverCardTrigger>
-                              <HoverCardContent>
-                                  <p className="text-sm text-muted-foreground">{}</p>
-                              </HoverCardContent>
-                          </HoverCard>
-                      </div>
+                      <CardTitle className="font-semibold">
+                          Previous Day Sleep and Activity
+                      </CardTitle>
                   </div>
+                  <CardDescription>
+                      Previous day sleep and activity shows how well you've slept and been active the night before.
+                  </CardDescription>
               </CardHeader>
               <CardContent>
                   {metrics?.days.length ? (
