@@ -1,4 +1,4 @@
-# Oura AI Extension
+# Oura AI Extension.
 
 [Oura](https://ouraring.com/) is smart ring that allow you to track your sleep quality and activity.
 
